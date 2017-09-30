@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns="http://www.springframework.org/schema/beans" xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+http://www.springframework.org/schema/mvc 
+http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+    <context:component-scan base-package="com.hy.action"/>
+    <mvc:default-servlet-handler/>
+    <aop:aspectj-autoproxy proxy-target-class="true" expose-proxy="true"/>
+    <bean id="myThreadPool" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="5"/>
+        <!--最小线程数 -->
+        <property name="maxPoolSize" value="10"/>
+        <!--最大线程数 -->
+        <property name="queueCapacity" value="50"/>
+        <!--缓冲队列大小 -->
+        <property name="threadNamePrefix" value="digital~"/>
+        <!--线程池中产生的线程名字前缀 -->
+        <property name="keepAliveSeconds" value="30"/>
+        <!--线程池中空闲线程的存活时间单位秒 -->
+    </bean>
+
+    <!-- Executor -->
+<!--    <task:executor id="executor" pool-size="30"/>
+    <task:annotation-driven executor="executor"/>-->
+    <bean id="messageConverter" class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter">
+        <property name="supportedMediaTypes">
+            <list>
+                <value>application/json;charset=UTF-8</value>
+                <value>text/html;charset=UTF-8</value><!-- 避免IE出现下载JSON文件的情况 -->
+            </list>
+        </property>
+        <property name="dateFormat" value="#{config['dateFormat']}"/>
+    </bean>
+
+    <mvc:annotation-driven enableMatrixVariables="true" validator="validator">
+        <mvc:message-converters register-defaults="true">
+            <!--            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                            <property name="supportedMediaTypes" value="text/html;charset=UTF-8"/>
+                        </bean>-->
+            <ref bean="messageConverter"/>
+        </mvc:message-converters>
+        <mvc:return-value-handlers>
+            <bean class="com.hy.annotation.impl.EncryptProcessParams">
+                <constructor-arg ref="messageConverter"/>
+            </bean>
+        </mvc:return-value-handlers>
+        <mvc:argument-resolvers>
+            <bean class="com.hy.annotation.impl.MapBindProcess"/>
+            <bean class="com.hy.annotation.impl.EncryptProcessParams">
+                <constructor-arg ref="messageConverter"/>
+            </bean>
+        </mvc:argument-resolvers>
+        <mvc:async-support default-timeout="2000" task-executor="myThreadPool">
+            <mvc:callable-interceptors>
+                <bean class="com.hy.intercept.ABC"></bean>
+            </mvc:callable-interceptors>
+        </mvc:async-support>
+    </mvc:annotation-driven>
+        <mvc:interceptors>
+            <mvc:interceptor>
+                <mvc:mapping path="/*/**"/>
+                <mvc:exclude-mapping path="/**/login"/>
+                <mvc:exclude-mapping path="/**/user/add"/>
+                <mvc:exclude-mapping path="/**/user/forget"/>
+                <mvc:exclude-mapping path="/**/sms"/>
+                <mvc:exclude-mapping path="/**/*.html"/>
+                <bean class="com.hy.intercept.TokenInterceptor"/>
+            </mvc:interceptor>
+        </mvc:interceptors>
+    <!-- 避免IE执行AJAX时,返回JSON出现下载文件 -->
+    <!--
+            <bean id="mappingJacksonHttpMessageConverter"
+                  class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>application/json;charset=UTF-8</value>
+                    </list>
+                </property>
+            </bean>
+    -->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver"
+          p:defaultEncoding="UTF-8">
+        <property name="maxUploadSize" value="104857600"></property>
+        <property name="maxInMemorySize" value="40960"/>
+    </bean>
+    <!-- 启动Spring MVC的注解功能，完成请求和注解POJO的映射 -->
+    <!--    <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+            <property name="messageConverters">
+                <list>
+                    <ref bean="mappingJacksonHttpMessageConverter"/>
+                    &lt;!&ndash; json转换器 &ndash;&gt;
+                </list>
+            </property>
+        </bean>-->
+    <!-- 定时往socketio里面发送信息
+    <bean id="timerTaskService" class="com.cmb.appversactionller.SocketIOTimeTask"></bean>
+
+    <bean id="scheduleTimer" class="org.springframework.scheduling.timer.ScheduledTimerTask">
+        <property name="timerTask" ref="timerTaskService" />
+        <property name="period" value="${socketio.sendmsg.time}"></property>
+    </bean>
+
+    <bean id="scheduleTimerFactory" class="org.springframework.scheduling.timer.TimerFactoryBean">
+        <property name="scheduledTimerTasks">
+            <list>
+                <ref bean="scheduleTimer" />
+            </list>
+        </property>
+    </bean> -->
+
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/view/"/>
+        <property name="suffix" value=".html"/>
+        <property name="contentType" value="text/html; charset=utf-8"/>
+        <property name="exposePathVariables" value="false"/>
+    </bean>
+
+    <bean id="htmlviewResolver" class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+        <property name="suffix" value=".html"/>
+        <property name="contentType" value="text/html;charset=UTF-8"></property>
+    </bean>
+
+    <bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+        <property name="providerClass" value="org.hibernate.validator.HibernateValidator"/>
+        <property name="validationMessageSource" ref="messageSource"/>
+        <!--<property name="validationProperties" value="classpath*:messages.properties"/>-->
+
+    </bean>
+<!--    <aop:config proxy-target-class="true" expose-proxy="true"/>
+    <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor" p:order="900">
+        <property name="securityManager" ref="securityManager" />
+    </bean>-->
+</beans>

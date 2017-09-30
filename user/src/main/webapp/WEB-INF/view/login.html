@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+</head>
+<body>
+Hello World
+</body>
+<script>
+    var att_json =
+        [
+            {
+                "attGroup": {
+                    "100": "银色",
+                    "101": "64G",
+                    "102": "3G"
+                },
+                "stock": 1000,
+                "sold": 0,
+                "stockPrice": 5088.58,
+                "price": 6088,
+                "discPrice": 5999
+            },
+            {
+                "attGroup": {
+                    "100": "金色",
+                    "101": "512G",
+                    "102": "3G"
+                },
+                "stock": 1000,
+                "sold": 0,
+                "stockPrice": 5888.58,
+                "price": 6888,
+                "discPrice": 6366
+            }, {
+            "attGroup": {
+                "100": "白色",
+                "101": "128",
+                "102": "3G"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 6588,
+            "discPrice": 5999
+        }
+        ]
+    var periods =
+        [
+            {
+                "period": 3,
+                "firstPayRatio": 0.40,
+                "rate": 0.01,
+                "fee": 1000,
+                "insure": 100000
+            }, {
+            "period": 6,
+            "firstPayRatio": 0.30,
+            "rate": 0.01,
+            "fee": 1200,
+            "insure": 100000
+        }, {
+            "period": 12,
+            "firstPayRatio": 0.20,
+            "rate": 0.01,
+            "fee": 1400,
+            "insure": 100000
+        }, {
+            "period": 24,
+            "firstPayRatio": 0.10,
+            "rate": 0.01,
+            "fee": 1600,
+            "insure": 100000
+        }
+        ]
+
+    var result =
+        {
+            "params": {
+                "money": "1000",
+                "storeId": "100",
+                "userId": "1035",
+                "attr": {"100": "金色", "102": "3G", "101": "220G"},
+                "period": {"rate": "0.01", "firstPayRatio": "0.3", "insure": "10000", "period": "12", "fee": "1300"}
+            }
+        }
+
+    var att_Json2 = [
+        {
+            "attGroup": {
+                "100": "钻雕金",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3488,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "玫瑰金",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3488,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "钻雕蓝",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3488,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "陶瓷白",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3488,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "草木绿",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3488,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "曜石黑",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5888.58,
+            "price": 3488,
+            "discPrice": 6366
+        },
+        {
+            "attGroup": {
+                "100": "钻雕金",
+                "1000": "全网通",
+                "102": "4GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3988,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "玫瑰金",
+                "1000": "全网通",
+                "102": "4GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3988,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "钻雕蓝",
+                "1000": "全网通",
+                "102": "4GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3988,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "陶瓷白",
+                "1000": "全网通",
+                "102": "4GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3988,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "草木绿",
+                "1000": "全网通",
+                "102": "4GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3988,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "曜石黑",
+                "1000": "全网通",
+                "102": "4GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5888.58,
+            "price": 3988,
+            "discPrice": 6366
+        }
+    ]
+
+    var att_Json3 = [
+        {
+            "attGroup": {
+                "100": "香槟金",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3599,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "摩卡金",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5888.58,
+            "price": 3599,
+            "discPrice": 6366
+        }, {
+            "attGroup": {
+                "100": "陶瓷白",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3599,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "月光银",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3599,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "苍穹灰",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3599,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "黑色",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3599,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "托帕蓝",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3599,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "香槟金",
+                "1000": "全网通",
+                "102": "4GB+32GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 3099,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "摩卡金",
+                "1000": "全网通",
+                "102": "4GB+32GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5888.58,
+            "price": 3099,
+            "discPrice": 6366
+        }, {
+            "attGroup": {
+                "100": "陶瓷白",
+                "1000": "全网通",
+                "102": "4GB+32GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3099,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "月光银",
+                "1000": "全网通",
+                "102": "4GB+32GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3099,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "苍穹灰",
+                "1000": "全网通",
+                "102": "4GB+32GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3099,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "黑色",
+                "1000": "全网通",
+                "102": "4GB+32GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3099,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "托帕蓝",
+                "1000": "全网通",
+                "102": "4GB+64GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 3599,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "香槟金",
+                "1000": "全网通",
+                "102": "6GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5088.58,
+            "price": 4199,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "摩卡金",
+                "1000": "全网通",
+                "102": "6GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5888.58,
+            "price": 4199,
+            "discPrice": 6366
+        }, {
+            "attGroup": {
+                "100": "陶瓷白",
+                "1000": "全网通",
+                "102": "6GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 4199,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "月光银",
+                "1000": "全网通",
+                "102": "6GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 4199,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "苍穹灰",
+                "1000": "全网通",
+                "102": "6GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 4199,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "黑色",
+                "1000": "全网通",
+                "102": "6GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 4199,
+            "discPrice": 5999
+        },
+        {
+            "attGroup": {
+                "100": "托帕蓝",
+                "1000": "全网通",
+                "102": "6GB+128GB"
+            },
+            "stock": 1000,
+            "sold": 0,
+            "stockPrice": 5388.58,
+            "price": 4199,
+            "discPrice": 5999
+        }
+    ]
+    var test =
+        [{
+            "sold": 0,
+            "price": 5499,
+            "stock": 1000,
+            "attGroup": {"1000": "金色", "1003": "32G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 5499,
+            "stock": 1000,
+            "attGroup": {"1000": "银色", "1003": "32G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 5499,
+            "stock": 1000,
+            "attGroup": {"1000": "玫瑰金", "1003": "32G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 5499,
+            "stock": 1000,
+            "attGroup": {"1000": "黑色", "1003": "32G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 5499,
+            "stock": 1000,
+            "attGroup": {"1000": "亮黑色", "1003": "32G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 6199,
+            "stock": 1000,
+            "attGroup": {"1000": "金色", "1003": "128G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 6199,
+            "stock": 1000,
+            "attGroup": {"1000": "银色", "1003": "128G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 6199,
+            "stock": 1000,
+            "attGroup": {"1000": "玫瑰金", "1003": "128G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 6199,
+            "stock": 1000,
+            "attGroup": {"1000": "黑色", "1003": "128G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 6199,
+            "stock": 1000,
+            "attGroup": {"1000": "亮黑色", "1003": "128G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 7988,
+            "stock": 1000,
+            "attGroup": {"1000": "金色", "1003": "256G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 7988,
+            "stock": 1000,
+            "attGroup": {"1000": "银色", "1003": "256G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 7988,
+            "stock": 1000,
+            "attGroup": {"1000": "玫瑰金", "1003": "256G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 7988,
+            "stock": 1000,
+            "attGroup": {"1000": "黑色", "1003": "256G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        },{
+            "sold": 0,
+            "price": 7988,
+            "stock": 1000,
+            "attGroup": {"1000": "亮黑色", "1003": "256G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        }]
+    var proArrJosn =
+        [{
+            "sold": 0,
+            "price": 6088,
+            "stock": 1000,
+            "attGroup": {"100": "银色", "101": "64G", "102": "3G"},
+            "discPrice": 5999,
+            "stockPrice": 5088.58
+        }, {
+            "sold": 0,
+            "price": 6888,
+            "stock": 1000,
+            "attGroup": {"100": "金色", "101": "512G", "102": "3G"},
+            "discPrice": 6366,
+            "stockPrice": 5888.58
+        }, {
+            "sold": 0,
+            "price": 6588,
+            "stock": 1000,
+            "attGroup": {"100": "白色", "101": "128", "102": "3G"},
+            "discPrice": 5999,
+            "stockPrice": 5388.58
+        }]
+
+</script>
+</html>

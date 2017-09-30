@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util" xmlns:c="http://www.springframework.org/schema/c"
+       xmlns:cache="http://www.springframework.org/schema/cache" xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd
+    http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+http://www.springframework.org/schema/context
+http://www.springframework.org/schema/context/spring-context-4.0.xsd http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"
+       default-autowire="byName">
+
+    <!-- 引入属性文件 -->
+<!--    <context:property-placeholder file-encoding="utf8" location="classpath*:config.properties"/>
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="classpath*:config.properties"/>
+        &lt;!&ndash;<property name="location" value="file:#{config['user.dir']}/db.properties"/>&ndash;&gt;
+        &lt;!&ndash;<property name="location" value="file:/usr/share/conf/db.properties"/>&ndash;&gt;
+    </bean>-->
+    <util:properties id="config" location="classpath:config.properties"/>
+    <!--<util:properties id="message" location="classpath:message.properties"/>-->
+    <util:properties id="initData" location="classpath*:initData.properties"/>
+    <!-- 自动扫描(自动注入) -->
+    <!--<context:component-scan base-package="com.ygo" scoped-proxy="interfaces"/>-->
+    <context:component-scan base-package="com.hy.core,com.hy.dao"/>
+    <context:annotation-config/>
+
+    <!-- 阿里 druid数据库连接池 -->
+    <bean id="parentDataSource" class="com.alibaba.druid.pool.DruidDataSource" destroy-method="close" abstract="true">
+        <property name="filters" value="#{config['jdbc.filters']}"/>
+        <!-- 最大并发连接数 -->
+        <property name="maxActive" value="#{config['jdbc.maxActive']}"/>
+        <!-- 初始化连接数量 -->
+        <property name="initialSize" value="#{config['jdbc.initialSize']}"/>
+        <!-- 配置获取连接等待超时的时间 -->
+        <property name="maxWait" value="#{config['jdbc.maxWait']}"/>
+        <!-- 最小空闲连接数 -->
+        <property name="minIdle" value="#{config['jdbc.minIdle']}"/>
+        <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+        <property name="timeBetweenEvictionRunsMillis" value="#{config['jdbc.timeBetweenEvictionRunsMillis']}"/>
+        <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+        <property name="minEvictableIdleTimeMillis" value="#{config['jdbc.minEvictableIdleTimeMillis']}"/>
+        <property name="validationQuery" value="#{config['jdbc.validationQuery']}"/>
+        <property name="testWhileIdle" value="#{config['jdbc.testWhileIdle']}"/>
+        <property name="testOnBorrow" value="#{config['jdbc.testOnBorrow']}"/>
+        <property name="testOnReturn" value="#{config['jdbc.testOnReturn']}"/>
+        <property name="maxOpenPreparedStatements" value="#{config['jdbc.maxOpenPreparedStatements']}"/>
+        <!-- 打开removeAbandoned功能 -->
+        <property name="removeAbandoned" value="#{config['jdbc.removeAbandoned']}"/>
+        <!-- 1800秒，也就是30分钟 -->
+        <property name="removeAbandonedTimeout" value="#{config['jdbc.removeAbandonedTimeout']}"/>
+        <!-- 关闭abanded连接时输出错误日志 -->
+        <property name="logAbandoned" value="#{config['jdbc.logAbandoned']}"/>
+    </bean>
+    <!--主数据源-->
+    <bean id="master" parent="parentDataSource">
+        <!-- 数据库基本信息配置 -->
+        <property name="url" value="#{config['jdbc.master.url']}"/>
+        <property name="username" value="#{config['mysql.username']}"/>
+        <property name="password" value="#{config['mysql.password']}"/>
+        <property name="driverClassName" value="#{config['jdbc.driverClassName']}"/>
+    </bean>
+    <!--从数据源-->
+    <bean id="slave1" parent="parentDataSource">
+        <!-- 数据库基本信息配置 -->
+        <property name="url" value="#{config['jdbc.slave1.url']}"/>
+        <property name="username" value="#{config['mysql.username']}"/>
+        <property name="password" value="#{config['mysql.password']}"/>
+        <property name="driverClassName" value="#{config['jdbc.driverClassName']}"/>
+    </bean>
+
+    <!--动态数据源-->
+    <bean id="dataSource" class="com.hy.core.DynamicDataSource">
+        <property name="targetDataSources">
+            <map key-type="java.lang.String">
+                <entry key="master" value-ref="master"/>
+                <entry key="slave1" value-ref="slave1"/>
+<!--                <entry key="yg602" value-ref="yg602"/>
+                <entry key="yg618" value-ref="yg618"/>-->
+            </map>
+        </property>
+        <property name="defaultTargetDataSource" ref="master"/>
+    </bean>
+    <!--    <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+            <property name="basenames">
+                <list>
+                    <value>message</value>
+                    <value>org/hibernate/validator/ValidationMessages</value>
+                </list>
+            </property>
+            <property name="defaultEncoding" value="UTF-8"/>
+            <property name="commonMessages" value="message"/>
+        </bean>-->
+    <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="basenames">
+            <list>
+                <!-- 在web环境中一定要定位到classpath 否则默认到当前web应用下找  -->
+                <value>message</value>
+                <value>org/hibernate/validator/ValidationMessages</value>
+            </list>
+        </property>
+
+        <property name="useCodeAsDefaultMessage" value="false"/>
+        <property name="defaultEncoding" value="UTF-8"/>
+        <property name="cacheSeconds" value="86400"/>
+        <property name="commonMessages" value="messages"/>
+    </bean>
+
+    <bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"/>
+<!--    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.hy.dao"/>
+        <property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+        &lt;!&ndash;<property name="markerInterface" ref=""/>&ndash;&gt;
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+    </bean>-->
+
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="configLocation" value="classpath:configuration.xml"></property>
+        <property name="dataSource" ref="dataSource"/>
+        <property name="mapperLocations" value="classpath*:mapping/*.xml"/>
+        <!--<property name="typeAliasesPackage" value="com.hy.pojo"/>-->
+    </bean>
+    <bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate" c:sqlSessionFactory-ref="sqlSessionFactory" />
+
+    <!-- 打开Spring的Annotation支持 -->
+    <context:annotation-config />
+    <context:component-scan base-package="com.hy.base,com.hy.util,com.hy.service,com.hy.task"/>
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="nestedTransactionAllowed" value="true"/>
+        <property name="dataSource" ref="dataSource"/>
+        <property name="transactionSynchronization" value="1"/>
+    </bean>
+    <tx:advice id="serviceAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="save*" propagation="REQUIRED"  rollback-for="Exception"/>
+            <tx:method name="add*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="create*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="insert*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="update*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="merge*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="del*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="delete*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="remove*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="put*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="get*" propagation="NOT_SUPPORTED" read-only="true" />
+            <tx:method name="count*" propagation="NOT_SUPPORTED" read-only="true" />
+            <tx:method name="find*" propagation="NOT_SUPPORTED" read-only="true" />
+            <tx:method name="query*" propagation="NOT_SUPPORTED" read-only="true" />
+            <tx:method name="list*" propagation="NOT_SUPPORTED" read-only="true" />
+            <tx:method name="*" propagation="SUPPORTS" read-only="true" />
+        </tx:attributes>
+    </tx:advice>
+
+    <aop:aspectj-autoproxy proxy-target-class="true" expose-proxy="true"/>
+    <aop:config proxy-target-class="true" expose-proxy="true">
+        <!--<aop:pointcut id="servicePointCuts" expression="execution(* com.hy.service.*.*.*(..))"/>-->
+        <aop:pointcut id="service2PointCuts" expression="execution(* com.hy.service..*.*(..))"/>
+        <!--<aop:pointcut id="daoPointCuts" expression="execution(* com.hy.dao.*..*(..))"/>-->
+        <!--<aop:advisor advice-ref="serviceAdvice" pointcut-ref="servicePointCuts" order="1003"/>-->
+        <aop:advisor advice-ref="serviceAdvice" pointcut-ref="service2PointCuts" order="1003"/>
+    </aop:config>
+
+    <tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true" order="1004"/>
+    <!--<cache:annotation-driven cache-manager="cacheManager" mode="aspectj" proxy-target-class="true"/>-->
+    <!-- 线程执行器配置，用于任务注册 -->
+    <!--    <bean id="executor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+            <property name="corePoolSize" value="10" />
+            <property name="maxPoolSize" value="100" />
+            <property name="queueCapacity" value="500" />
+        </bean>
+        &lt;!&ndash; 设置调度 &ndash;&gt;
+        <bean id="scheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+            <property name="dataSource" ref="dataSource"/>
+            <property name="transactionManager" ref="transactionManager"/>
+            <property name="taskExecutor" ref="executor" />
+        </bean>-->
+
+    <!-- =================Spring data REDIS configuration =============================== -->
+    <bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <property name="maxTotal" value="#{config['cache.maxTotal']}"></property>
+        <property name="maxIdle" value="#{config['cache.maxIdle']}"></property>
+        <property name="maxWaitMillis" value="#{config['cache.maxWaitMillis']}"></property>
+        <property name="minEvictableIdleTimeMillis" value="#{config['cache.minEvictableIdleTimeMillis']}"></property>
+        <property name="numTestsPerEvictionRun" value="3"></property>
+        <property name="timeBetweenEvictionRunsMillis" value="60000"></property>
+    </bean>
+    <bean id="jedisConnectionFactory"
+          class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
+          destroy-method="destroy">
+        <property name="poolConfig" ref="jedisPoolConfig"></property>
+        <property name="hostName" value="#{config['cache.host']}"></property>
+        <property name="port" value="#{config['cache.port']}"></property>
+        <property name="password" value="#{config['cache.pwd']}"></property>
+        <property name="timeout" value="15000"></property>
+        <property name="usePool" value="true"></property>
+    </bean>
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+        <property name="connectionFactory" ref="jedisConnectionFactory"></property>
+        <property name="keySerializer">
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+        </property>
+        <property name="hashKeySerializer">
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+        </property>
+        <property name="valueSerializer">
+            <bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"/>
+        </property>
+        <property name="hashValueSerializer">
+            <bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"/>
+        </property>
+    </bean>
+    <bean id="jedisPool" class="redis.clients.jedis.JedisPool" c:poolConfig-ref="jedisPoolConfig"
+          c:host="#{config['cache.host']}" c:password="#{config['cache.pwd']}" c:port="#{config['cache.port']}" c:timeout="15000"/>
+    <bean id="cacheManager" class="org.springframework.data.redis.cache.RedisCacheManager"
+          c:redisOperations-ref="redisTemplate">
+        <property name="cacheNames">
+            <set>
+                <value>tmp</value>
+                <value>common</value>
+                <value>system</value>
+                <value>columns</value>
+                <value>session</value>
+                <value>auth</value>
+            </set>
+        </property>
+        <property name="expires">
+            <map>
+                <entry key="tmp" value="3600"/><!--1小时-->
+                <entry key="common" value="14400"/><!--4小时-->
+                <entry key="system" value="25920000"/><!--300天-->
+                <entry key="columns" value="2592000"/><!--300天-->
+                <entry key="session" value="2592000"/><!--30天-->
+                <entry key="auth" value="2592000"/><!--30天-->
+            </map>
+        </property>
+        <property name="defaultExpiration" value="30"/>
+    </bean>
+    <bean id="jdkSerializationRedisSerializer" class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"/>
+
+    <!-- turn on declarative caching -->
+    <cache:annotation-driven proxy-target-class="true" cache-manager="cacheManager"/>
+
+</beans>

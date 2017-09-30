@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hy.dao.BaseDao">
+        <select id="queryListInTab" parameterType="map" resultType="map">
+            select * FROM ${tableName}
+            <trim prefix="where" prefixOverrides="or | and">
+                <foreach collection="params" item="item" index="key" separator=" and ">
+                    <if test="null != item">${key}=#{item}</if>
+                </foreach>
+            </trim>
+            <if test="null != orderMap">
+		        <trim prefix="order by" prefixOverrides=",">
+		            <foreach collection="orderMap" item="item" index="key" separator=",">
+		                <if test="null != item">${key} ${item}</if>
+		            </foreach>
+		        </trim>
+	        </if>
+        </select>
+
+    <select id="queryListInT" parameterType="map" resultType="map">
+        select * FROM ${tableName}
+        <trim prefix="where" prefixOverrides="or | and">
+            <foreach collection="params" item="item" index="key" separator=" and ">
+                <if test="null != item">${key}=#{item}</if>
+            </foreach>
+        </trim>
+        <if test="null != orderMap">
+            <trim prefix="order by" prefixOverrides=",">
+                <foreach collection="orderMap" item="item" index="key" separator=",">
+                    <if test="null != item">${key} ${item}</if>
+                </foreach>
+            </trim>
+        </if>
+    </select>
+
+    <select id="queryListSufInTab" parameterType="map" resultType="map">
+        select * FROM ${tableName}
+        <trim prefix="where" prefixOverrides="or | and">
+            <foreach collection="params" item="item" index="key" separator=" and ">
+                <if test="null != item">${key}=#{item}</if>
+            </foreach>
+        </trim>
+        <if test="null != orderMap">
+            <trim prefix="order by" prefixOverrides=",">
+                <foreach collection="orderMap" item="item" index="key" separator=",">
+                    <if test="null != item">${key} ${item}</if>
+                </foreach>
+            </trim>
+        </if>
+        #{sufSql}
+    </select>
+
+    <select id="queryByProsInTab" parameterType="map" resultType="map">
+        select * FROM ${tableName}
+        <trim prefix="where" prefixOverrides="or | and">
+            <foreach collection="params" item="item" index="key" separator=" and ">
+                <if test="null != item">${key}=#{item}</if>
+            </foreach>
+        </trim>
+    </select>
+
+    <select id="queryByProsInT" parameterType="map" resultType="map">
+        select * FROM ${tableName}
+        <trim prefix="where" prefixOverrides="or | and">
+            <foreach collection="params" item="item" index="key" separator=" and ">
+                <if test="null != item">${key}=#{item}</if>
+            </foreach>
+        </trim>
+    </select>
+
+    <select id="queryByIdInTab" parameterType="map" resultType="map">
+        select * FROM ${tableName} where ID=#{id}
+    </select>
+
+    <select id="queryAllInTab" parameterType="map" resultType="map">
+        select * from ${tableName}
+    </select>
+
+        <select id="queryAllOnSortInTab" parameterType="map" resultType="map">
+            select * from ${tableName}
+            <if test="null != orderMap">
+		        <trim prefix="order by" prefixOverrides=",">
+		            <foreach collection="orderMap" item="item" index="key" separator=",">
+		                <if test="null != item">${key} ${item}</if>
+		            </foreach>
+		        </trim>
+	        </if>
+        </select>
+        
+        <update id="updateByProsInTab" parameterType="map">
+            UPDATE ${tableName}
+            <trim prefix="set" prefixOverrides=",">
+                <foreach collection="params" item="item" index="key" separator=",">
+                    ${key}=#{item}
+                </foreach>
+            </trim>
+        </update>
+        
+        <delete id="deleteByProsInTab" parameterType="map">
+            delete from ${tableName}
+            <trim prefix="where" prefixOverrides="or | and">
+                <foreach collection="params" item="item" index="key" separator=" and ">
+                    <if test="null != item">${key}=#{item}</if>
+                </foreach>
+            </trim>
+        </delete>
+        
+        <insert id="insertByProsInTab" parameterType="map">
+            insert into ${tableName}
+             <trim prefix="(" suffix=")" suffixOverrides=",">
+                 <foreach collection="params.keys" item="key" index="ind" separator=",">
+                     ${key}
+                 </foreach>
+             </trim>
+            <trim prefix=" values(" suffix=")" suffixOverrides=",">
+                <foreach collection="params.values" item="value" index="ind" separator=",">
+                    #{value}
+                </foreach>
+            </trim>
+        </insert>
+
+    <insert id="insertBatchByProsInTab" parameterType="map">
+        insert into ${tableName}
+            <foreach collection="dataList" item="data" index="ind" separator=",">
+                <if test="ind == 0">
+                    <foreach collection="data.keys" item="k" separator="," open="(" close=") values">
+                        ${k}
+                    </foreach>
+                </if>
+                <foreach collection="data.values" item="value" open="(" close=")" separator=",">
+                    #{value}
+                </foreach>
+            </foreach>
+    </insert>
+    <insert id="insertIgnoreBatchByProsInTab" parameterType="map">
+        insert ignore into ${tableName}
+        <foreach collection="dataList" item="data" index="ind" separator=",">
+            <if test="ind == 0">
+                <foreach collection="data.keys" item="k" separator="," open="(" close=") values">
+                    ${k}
+                </foreach>
+            </if>
+            <foreach collection="data.values" item="value" open="(" close=")" separator=",">
+                #{value}
+            </foreach>
+        </foreach>
+    </insert>
+    <insert id="insertIgnoreByProsInTab" parameterType="map">
+        insert IGNORE  into ${tableName}
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <foreach collection="params.keys" item="key" index="ind" separator=",">
+                ${key}
+            </foreach>
+        </trim>
+        <trim prefix=" values(" suffix=")" suffixOverrides=",">
+            <foreach collection="params.values" item="value" index="ind" separator=",">
+                #{value}
+            </foreach>
+        </trim>
+    </insert>
+    <insert id="insertUpdateByProsInTab" parameterType="map">
+        insert into ${tableName}
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <foreach collection="params.keys" item="key" index="ind" separator=",">
+                ${key}
+            </foreach>
+        </trim>
+        <trim prefix=" values(" suffix=")" suffixOverrides=",">
+            <foreach collection="params.values" item="value" index="ind" separator=",">
+                #{value}
+            </foreach>
+        </trim>
+        <trim prefix="on duplicate key update" suffixOverrides=",">
+            <foreach collection="params.keys" item="k" separator=",">
+                <if test='k !="ID"'>${k}=VALUES(${k})</if>
+            </foreach>
+        </trim>
+    </insert>
+    <insert id="insertUpdateBatchByProsInTab" parameterType="map">
+        insert into ${tableName}
+        <foreach collection="dataList" item="data" index="ind" separator=",">
+            <if test="ind == 0">
+                <foreach collection="data.keys" item="k" separator="," open="(" close=") values">
+                    ${k}
+                </foreach>
+            </if>
+            <foreach collection="data.values" item="value" open="(" close=")" separator=",">
+                #{value}
+            </foreach>
+            <if test="ind== dataList.size-1">
+                on duplicate key update
+                <foreach collection="data.keys" item="k" separator=",">
+                    <if test='k !="ID"'>${k}=VALUES(${k})</if>
+                </foreach>
+            </if>
+        </foreach>
+    </insert>
+
+    	<select id="queryPageLikeInTab" parameterType="map" resultType="map">
+	        select * from ${tableName}
+	        <if test="null != page.params">
+	        <trim prefix="where" prefixOverrides="or | and">
+	            <foreach collection="page.params" item="item" index="key" separator=" and ">
+	                <if test="null != item">
+	                	${key} LIKE '%${item}%'
+	                </if>
+	            </foreach>
+	        </trim>
+	        </if>
+	        <if test="null != page.orderMap">
+	        <trim prefix="order by" prefixOverrides=",">
+	            <foreach collection="page.orderMap" item="item" index="key" separator=",">
+	                <if test="null != item">${key} ${item}</if>
+	            </foreach>
+	        </trim>
+	        </if>
+	    </select>
+
+    <select id="queryPageInTab" parameterType="map" resultType="map">
+        select * from ${tableName}
+        <if test="null != page.params">
+            <trim prefix="where" prefixOverrides="or | and">
+                <foreach collection="page.params" item="item" index="key" separator=" and ">
+                    <if test="null != item">
+                        ${key} = #{item}
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.orderMap">
+            <trim prefix="order by" prefixOverrides=",">
+                <foreach collection="page.orderMap" item="item" index="key" separator=",">
+                    <if test="null != item">${key} ${item}</if>
+                </foreach>
+            </trim>
+        </if>
+    </select>
+
+    <insert id="ddlBySql" parameterType="map">
+        ${dynSql}
+    </insert>
+
+    <select id="queryBySql" parameterType="map" statementType="PREPARED" resultType="map">
+        ${dynSql}
+    </select>
+    <select id="queryByS" parameterType="map" statementType="PREPARED" resultType="map">
+        ${dynSql}
+    </select>
+</mapper>

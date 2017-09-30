@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hy.dao.CommonDao">
+    <select id="queryUserInfoMul" parameterType="map" resultType="map">
+		SELECT u.*,c.*,ub.BANK_USER_NAME bankUserName,ub.BANK_MOBILE bankMobile,ub.BANK_CARD_NO bankCardNo FROM fq.USER u
+    LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+    JOIN (SELECT BANK_CARD_NO,BANK_MOBILE,BANK_USER_NAME,USER_ID FROM fq.USER_BANK WHERE USER_ID=#{userId} ORDER BY CTIME LIMIT 1) ub ON u.ID=ub.USER_ID
+	</select>
+
+    <select id="queryCJUserPageMul" resultMap="cjUserMap" parameterType="map">
+   SELECT u.*,o.*,c.* FROM fq.USER u
+JOIN fq.ORDER o ON u.ID=o.USER_ID
+LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+ WHERE o.STATE > '0' AND u.BIZER_ID=#{page.params.WORK_ID}
+    </select>
+
+    <resultMap id="cjUserMap" type="java.util.LinkedHashMap">
+        <id property="id" column="u_id"></id>
+        <result property="name" column="u_name"/>
+        <result property="cardNo" column="u_cardNo"/>
+        <result property="phone" column="u_phone"/>
+        <result property="weixin" column="u_winxin"/>
+        <result property="email" column="u_email"/>
+        <result property="address" column="u_address"/>
+        <result property="certStatus" column="u_certStatus"/>
+        <result property="ctime" column="u_ctime"/>
+        <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <collection property="orders" ofType="java.util.LinkedHashMap" javaType="ArrayList" columnPrefix="o_" autoMapping="true">
+            <id property="id" column="id"></id>
+            <!--            <result property="householdChartId" column="hca_householdChartId"/>
+                        <result property="houseHoldChartTypeId" column="hca_houseHoldChartTypeId"/>
+                        <result property="householdAreaInformation" column="hca_householdAreaInformation"/>
+                        <result property="remark" column="hca_remark"/>
+                        <result property="updateTime" column="hca_updateTime"/>
+                        <collection property="photosRecord" ofType="java.util.LinkedHashMap" javaType="ArrayList" columnPrefix="hpr_" autoMapping="true">
+                            <id  property="id" column="id"/>
+                        </collection>-->
+        </collection>
+    </resultMap>
+
+    <select id="querySBUserPageMul" resultMap="sbMap" parameterType="map">
+SELECT u.*,c.*,o.*
+FROM fq.USER u
+  left JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+  LEFT JOIN fq.ORDER o ON u.ID=o.USER_ID
+WHERE o.STATE='0' AND u.BIZER_ID=#{page.params.WORK_ID}
+<!--/*SELECT u.*,o.*
+FROM fq.USER u
+  LEFT JOIN fq.ORDER o ON u.ID=o.USER_ID
+WHERE (u.CERT_STATUS !='4' OR (o.STATE='0' OR o.STATE =NULL )) AND u.BIZER_ID=#{page.params.WORK_ID}*/
+-->
+    </select>
+
+    <resultMap id="sbMap" type="java.util.LinkedHashMap">
+        <association property="user" autoMapping="true" columnPrefix="u_" javaType="map">
+            <id property="id" column="id"/>
+        </association>
+        <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <collection property="orders" ofType="java.util.LinkedHashMap" javaType="ArrayList" columnPrefix="o_" autoMapping="true">
+            <id property="id" column="id"/>
+        </collection>
+    </resultMap>
+
+    <select id="queryDYHUserPageMul" parameterType="map" resultMap="dyhMap">
+SELECT u.*,pr.*,o.* ,c.* FROM fq.USER u
+JOIN fq.PLAN_REPAYMENT pr ON u.ID=pr.USER_ID
+JOIN fq.ORDER o ON pr.ORDER_ID=o.ID
+LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+WHERE u.BIZER_ID=#{page.params.WORK_ID} and pr.STATUS='0' and date_format(pr.PAY_DATE,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+    </select>
+
+    <resultMap id="dyhMap" type="java.util.LinkedHashMap">
+        <association property="user" columnPrefix="u_" javaType="map" autoMapping="true">
+        <id property="id" column="id"></id>
+        </association>
+        <association property="company" javaType="java.util.LinkedHashMap" columnPrefix="c_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <collection property="repayments" ofType="java.util.LinkedHashMap" javaType="ArrayList">
+            <id property="id" column="pr_id"></id>
+            <result property="repayNum" column="pr_repayNum"/>
+            <result property="planrepayDate" column="pr_planrepayDate"/>
+            <result property="planrepayMoney" column="pr_planrepayMoney"/>
+            <result property="status" column="pr_status"/>
+            <association property="order" javaType="java.util.LinkedHashMap" columnPrefix="o_" autoMapping="true">
+                <id property="id" column="id"/>
+            </association>
+        </collection>
+    </resultMap>
+
+    <select id="queryDYWHUserPageMul" parameterType="map" resultMap="dywhMap">
+        SELECT u.*,pr.*,o.* FROM fq.USER u
+        JOIN fq.PLAN_REPAYMENT pr ON u.ID=pr.USER_ID
+        JOIN fq.ORDER o ON pr.ORDER_ID=o.ID
+        LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        WHERE u.BIZER_ID=#{page.params.WORK_ID} and pr.STATUS='0' and date_format(pr.PAY_DATE,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+    </select>
+
+    <resultMap id="dywhMap" type="java.util.LinkedHashMap">
+        <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
+        <id property="id" column="id"></id>
+        </association>
+        <association property="company" javaType="java.util.LinkedHashMap" columnPrefix="c_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <collection property="repayments" ofType="java.util.LinkedHashMap" javaType="ArrayList">
+            <id property="id" column="pr_id"></id>
+            <result property="repayNum" column="pr_repayNum"/>
+            <result property="planrepayDate" column="pr_planrepayDate"/>
+            <result property="planrepayMoney" column="pr_planrepayMoney"/>
+            <result property="status" column="pr_status"/>
+            <association property="order" javaType="java.util.LinkedHashMap" columnPrefix="o_" autoMapping="true">
+                <id property="id" column="id"/>
+            </association>
+        </collection>
+    </resultMap>
+
+    <select id="queryXZUserPageMul" parameterType="map" resultMap="xzMap">
+      SELECT u.*,c.* FROM fq.USER u
+      LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+      WHERE u.BIZER_ID=#{page.params.WORK_ID} order by u.CTIME desc
+    </select>
+
+    <resultMap id="xzMap" type="map">
+        <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
+        <id property="id" column="id"></id>
+        </association>
+        <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+    </resultMap>
+
+    <select id="queryDSHUserPageMul" parameterType="map" resultMap="dshMap">
+        SELECT u.*,c.* FROM fq.USER u
+        LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        WHERE u.BIZER_ID=#{page.params.WORK_ID} and u.CERT_STATUS= '3' order by u.CTIME desc
+    </select>
+
+    <resultMap id="dshMap" type="map">
+        <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
+        <id property="id" column="id"></id>
+        </association>
+        <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+    </resultMap>
+
+</mapper>

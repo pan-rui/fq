@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- status=debug 可以查看log4j的装配过程 -->
+<Configuration status="warn" monitorInterval="10">
+    <Properties>
+        <property name="LOG_HOME">/var/logs/tomcat/</property>
+        <!--<property name="LOG_HOME">${web:rootDir}/</property>-->
+        <!-- 日志备份目录 -->
+        <property name="BACKUP_HOME">${LOG_HOME}/backup</property>
+        <property name="STAT_NAME">stat</property>
+        <property name="SERVER_NAME">global</property>
+    </Properties>
+    <Appenders>
+        <!-- 定义控制台输出 -->
+        <Console name="Console" target="SYSTEM_OUT" follow="true">
+            <PatternLayout pattern="%date{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread][%file:%line] - %msg%n"/>
+        </Console>
+        <!-- 程序员调试日志 -->
+        <RollingRandomAccessFile name="INFO" fileName="${LOG_HOME}/logs/info.log"
+                                 filePattern="${LOG_HOME}/logs/info-%d{yyyy-MM-dd}_%i.log" immediateFlush="false">
+            <PatternLayout pattern="%date{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread][%file:%line] - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="24" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="5"/>
+        </RollingRandomAccessFile>
+        <!-- 游戏产品数据分析日志 -->
+        <RollingRandomAccessFile name="WARN"
+                                 fileName="${LOG_HOME}/logs/warn.log"
+                                 filePattern="${LOG_HOME}/logs/warn-%d{yyyy-MM-dd}_%i.log">
+            <PatternLayout
+                    pattern="%date{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread][%file:%line] - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="24" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="5"/>
+        </RollingRandomAccessFile>
+        <RollingFile name="ERR" fileName="${LOG_HOME}/logs/err.log"
+                     filePattern="${LOG_HOME}/logs/$${date:yyyy-MM}/err_%d{MM-dd-yyyy}_%i.log.gz">
+            <PatternLayout pattern="%d{yyyy.MM.dd 'at' HH:mm:ss z} %-5level %class{36} %L %M - %msg%xEx%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="24" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="1"/>
+        </RollingFile>
+        <File name="ApplicationLog" fileName="${LOG_HOME}/logs/app.log">
+            <PatternLayout pattern="%d{yyyy.MM.dd 'at' HH:mm:ss z} %-5level %class{36} %L %M - %msg%xEx%n"/>
+        </File>
+        <Async name="Async">
+            <AppenderRef ref="ApplicationLog"/>
+        </Async>
+    </Appenders>
+    <Loggers>
+        <!-- 3rdparty Loggers -->
+        <Logger name="org.springframework.core" level="info">
+        </Logger>
+        <Logger name="org.springframework.beans" level="info">
+        </Logger>
+        <Logger name="org.springframework.context" level="info">
+        </Logger>
+        <Logger name="org.springframework.web" level="info">
+        </Logger>
+        <Logger name="org.apache.http" level="warn">
+        </Logger>
+        <Logger name="org.mybatis" level="debug" additivity="false">
+            <appender-ref ref="Console"/>
+        </Logger>
+        <Logger name="java.sql" level="debug" additivity="false">
+            <appender-ref ref="Console"/>
+        </Logger>
+        <Logger name="java.sql.Connection" level="debug" additivity="false">
+            <appender-ref ref="Console"/>
+        </Logger>
+        <Logger name="java.sql.Statement" level="trace" additivity="false">
+            <appender-ref ref="Console"/>
+        </Logger>
+        <Logger name="java.sql.PreparedStatement" level="debug" additivity="false">
+            <appender-ref ref="Console"/>
+        </Logger>
+        <Logger name="java.sql.ResultSet" level="debug" additivity="false">
+            <appender-ref ref="Console"/>
+        </Logger>
+        <Logger name="com.hy.core" additivity="false" level="TRACE">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="INFO"/>
+        </Logger>
+        <Logger name="com.hy" level="trace" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="INFO"/>
+            <!--<AppenderRef ref="ApplicationLog"/>-->
+            <!--<AppenderRef ref="Async"/>-->
+        </Logger>
+        <Logger name="com.hy.service" level="debug" additivity="false">
+            <AppenderRef ref="INFO"/>
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="com.hy.task" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="INFO"/>
+        </Logger>
+        <!-- Root Logger -->
+        <Root level="debug">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="INFO"/>
+            <AppenderRef ref="ERR"/>
+            <!--<AppenderRef ref="ProductLog"/>-->
+        </Root>
+    </Loggers>
+</Configuration>

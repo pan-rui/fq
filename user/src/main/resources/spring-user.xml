@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-4.1.xsd 
+http://www.springframework.org/schema/context 
+http://www.springframework.org/schema/context/spring-context-4.1.xsd 
+http://www.springframework.org/schema/mvc 
+http://www.springframework.org/schema/mvc/spring-mvc-4.1.xsd" default-autowire="byName">
+    <import resource="classpath*:baseServlet.xml"/>
+
+    <!-- 避免IE执行AJAX时,返回JSON出现下载文件 -->
+<!--    <bean id="mappingJacksonHttpMessageConverter"
+          class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+        <property name="supportedMediaTypes">
+            <list>
+                <value>application/json;charset=UTF-8</value>
+            </list>
+        </property>
+    </bean>-->
+
+    <!-- 启动Spring MVC的注解功能，完成请求和注解POJO的映射 -->
+<!--    <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+        <property name="messageConverters">
+            <list>
+                <ref bean="mappingJacksonHttpMessageConverter"/>
+                &lt;!&ndash; json转换器 &ndash;&gt;
+            </list>
+        </property>
+    </bean>-->
+
+    <mvc:interceptors>
+		
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+        <bean class="com.hy.intercept.AvoidSubmitsInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+    <bean id="druid-stat-interceptor" class="com.alibaba.druid.support.spring.stat.DruidStatInterceptor"/>
+    <bean id="druid-type-proxyCreator" class="com.alibaba.druid.support.spring.stat.BeanTypeAutoProxyCreator">
+        <!-- 所有ABCInterface的派生类被拦截监控  -->
+        <property name="targetBeanType" value="com.hy.dao.BaseDao" />
+        <property name="proxyTargetClass" value="true"/>
+        <property name="interceptorNames">
+            <list>
+                <value>druid-stat-interceptor</value>
+            </list>
+        </property>
+    </bean>
+    <mvc:resources mapping="/static/**" location="/static/"/>
+
+    <!-- 定时往socketio里面发送信息
+    <bean id="timerTaskService" class="com.cmb.appversion.controller.SocketIOTimeTask"></bean>
+
+    <bean id="scheduleTimer" class="org.springframework.scheduling.timer.ScheduledTimerTask">
+        <property name="timerTask" ref="timerTaskService" />
+        <property name="period" value="${socketio.sendmsg.time}"></property>
+    </bean>
+
+    <bean id="scheduleTimerFactory" class="org.springframework.scheduling.timer.TimerFactoryBean">
+        <property name="scheduledTimerTasks">
+            <list>
+                <ref bean="scheduleTimer" />
+            </list>
+        </property>
+    </bean> -->
+
+</beans>
