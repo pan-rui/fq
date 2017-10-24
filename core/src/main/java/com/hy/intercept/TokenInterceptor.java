@@ -30,9 +30,10 @@ public class TokenInterceptor extends HandlerInterceptorAdapter {
         String reqToken = request.getHeader(Constants.USER_TOKEN);
         String reqPhone = request.getHeader(Constants.USER_PHONE);
         String reqUserId = request.getHeader(Constants.USER_ID);
-        String reqClientSn = request.getHeader(Constants.CLIENT_SN);
+        String reqClientSn = request.getHeader(Constants.CLIENT_SN);        //TODO:AppStore上架
 
-        if (StringUtils.isEmpty(reqToken) || StringUtils.isEmpty(reqPhone) || StringUtils.isEmpty(reqUserId) || StringUtils.isEmpty(reqClientSn)||StringUtils.isEmpty(reqAppVer)) {
+        if (StringUtils.isEmpty(reqToken) || StringUtils.isEmpty(reqPhone) || StringUtils.isEmpty(reqUserId) || StringUtils.isEmpty(reqAppVer)) {
+//        if (StringUtils.isEmpty(reqToken) || StringUtils.isEmpty(reqPhone) || StringUtils.isEmpty(reqUserId) || StringUtils.isEmpty(reqClientSn)||StringUtils.isEmpty(reqAppVer)) {
             returnMsg(response, new BaseResult(ReturnCode.HEADER_PARAMS_VERIFY_ERROR));
             return false;
         }
@@ -48,10 +49,10 @@ public class TokenInterceptor extends HandlerInterceptorAdapter {
             Map<String, Object> personMap = baseImpl.getBaseDao().queryByIdInTab(Table.FQ +(reqAppVer.startsWith(Constants.USER)?Table.USER:Table.EMPLOYEE), reqUserId);
             clientSn = (String) personMap.get("clientSn");
         }
-        if (!reqClientSn.equals(clientSn)) {
+/*        if (!reqClientSn.equals(clientSn)) {          TODO:AppStore上架
             returnMsg(response, new BaseResult(ReturnCode.ONLY_LIMIT_CLIENT));
             return false;
-        }
+        }*/
         return true;
     }
 

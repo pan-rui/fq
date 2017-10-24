@@ -56,6 +56,7 @@ public class BaseDao {
         return sqlSessionTemplate.selectList(className + ".queryListInT", paramsMap);
     }
 
+    //limit 条数限制
     @DataSource
     public List<Map<String, Object>> queryListSufInTab(String tableName, Map<String, Object> params, Map<String, Object> orderMap,String sufSql) {
         Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("params", params).addParams("orderMap", orderMap).addParams("sufSql",sufSql);
@@ -149,13 +150,13 @@ public int insertIgnoreBatchByProsInTab(String tableName, List<Map<String, Objec
         return sqlSessionTemplate.insert(className + ".insertUpdateBatchByProsInTab", paramsMap);
     }
 
-    @DataSource
+/*    @DataSource
     public List<Map<String, Object>> queryPageLikeInTab(String tableName, final Page page) {
         Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("page", page);
         List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryPageLikeInTab", paramsMap);
         page.setResults(resultList);
         return resultList;
-    }
+    }*/
 
     @DataSource
     public List<Map<String, Object>> queryPageInTab(String tableName, final Page page) {

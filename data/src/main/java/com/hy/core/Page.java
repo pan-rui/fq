@@ -2,6 +2,7 @@ package com.hy.core;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ public class Page<T> implements Serializable{
     private int totalPage;//总页数
     private List<T> results;//对应的当前页记录
     private T params ;//其他的参数我们把它分装成一个Map对象
+    private Map<String,Object> matchs;
     private Map<String,String> orderMap;
 
     public int getPageNo() {
@@ -61,12 +63,20 @@ public class Page<T> implements Serializable{
     }
 
     public Map<String,Object> getParams() {
-        return params==null?new HashMap<String,Object>():params instanceof Map?(Map)params:Constants.poToMap(params);
+        return params==null?new LinkedHashMap<String,Object>():params instanceof Map?(Map)params:Constants.poToMap(params);
 //        return params;
     }
 
     public void setParams(T params) {
         this.params = params;
+    }
+
+    public Map<String,Object> getMatchs() {
+        return matchs==null?new LinkedHashMap<String,Object>():matchs;
+    }
+
+    public void setMatchs(Map<String,Object> matchs) {
+        this.matchs = matchs;
     }
 
     public Map<String, String> getOrderMap() {

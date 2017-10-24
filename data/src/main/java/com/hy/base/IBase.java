@@ -24,6 +24,7 @@ public interface IBase {
 //        return Base.applicationContext;
 //    }
     public static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+    public static final SimpleDateFormat dateSdf= new SimpleDateFormat("yyyy-MM-dd");
 
     default BaseResult getFormatError(BindingResult result) {
         List<FieldError> fields = result.getFieldErrors();

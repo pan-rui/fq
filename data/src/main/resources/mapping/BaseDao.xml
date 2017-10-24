@@ -107,7 +107,7 @@
             </trim>
         </delete>
         
-        <insert id="insertByProsInTab" parameterType="map">
+        <insert id="insertByProsInTab" parameterType="map" useGeneratedKeys="true" keyProperty="id">
             insert into ${tableName}
              <trim prefix="(" suffix=")" suffixOverrides=",">
                  <foreach collection="params.keys" item="key" index="ind" separator=",">
@@ -147,7 +147,7 @@
             </foreach>
         </foreach>
     </insert>
-    <insert id="insertIgnoreByProsInTab" parameterType="map">
+    <insert id="insertIgnoreByProsInTab" parameterType="map" useGeneratedKeys="true" keyProperty="id">
         insert IGNORE  into ${tableName}
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <foreach collection="params.keys" item="key" index="ind" separator=",">
@@ -160,7 +160,7 @@
             </foreach>
         </trim>
     </insert>
-    <insert id="insertUpdateByProsInTab" parameterType="map">
+    <insert id="insertUpdateByProsInTab" parameterType="map" useGeneratedKeys="true" keyProperty="id">
         insert into ${tableName}
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <foreach collection="params.keys" item="key" index="ind" separator=",">
@@ -198,7 +198,7 @@
         </foreach>
     </insert>
 
-    	<select id="queryPageLikeInTab" parameterType="map" resultType="map">
+<!--    	<select id="queryPageLikeInTab" parameterType="map" resultType="map">
 	        select * from ${tableName}
 	        <if test="null != page.params">
 	        <trim prefix="where" prefixOverrides="or | and">
@@ -216,7 +216,7 @@
 	            </foreach>
 	        </trim>
 	        </if>
-	    </select>
+	    </select>-->
 
     <select id="queryPageInTab" parameterType="map" resultType="map">
         select * from ${tableName}
@@ -227,6 +227,15 @@
                         ${key} = #{item}
                     </if>
                 </foreach>
+            </trim>
+        </if>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+            <foreach collection="page.matchs" item="item" index="key" separator=" and ">
+                <if test="null != item">
+                    ${key} LIKE '%${item}%'
+                </if>
+            </foreach>
             </trim>
         </if>
         <if test="null != page.orderMap">

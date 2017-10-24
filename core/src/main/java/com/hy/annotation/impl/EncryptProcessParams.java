@@ -86,7 +86,7 @@ public class EncryptProcessParams extends RequestResponseBodyMethodProcessor {
         String body = new String(getRequestPostBytes(request), StringUtils.isEmpty(request.getCharacterEncoding()) ? "utf-8" : request.getCharacterEncoding());
         Object result = null;
         if (body.contains("pageNo")) {
-            String jsonStr = jsonStrProcess(body, Arrays.asList("pageNo", "pageSize", "params", "orderMap"));
+            String jsonStr = jsonStrProcess(body, Arrays.asList("pageNo", "pageSize", "params", "orderMap","matchs"));
             result = JSON.parseObject(jsonStr, Page.class);
         } else {
             String jsonStr = jsonStrProcess(body, Arrays.asList("datas", "params","reqData"));

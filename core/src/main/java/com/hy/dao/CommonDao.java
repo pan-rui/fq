@@ -5,6 +5,7 @@ import com.hy.core.ParamsMap;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Connection;
@@ -65,6 +66,28 @@ public class CommonDao {
     public List<Map<String, Object>> queryDSHUserPageMul(final Page page) {
         List<Map<String,Object>> resultList=sqlSessionTemplate.selectList(className + ".queryDSHUserPageMul", ParamsMap.newMap("page", page));
         page.setResults(resultList);
+        return resultList;
+    }
+
+    @Cacheable(key = "'repayList_'+#userId",condition = "#result != null")
+    public List<Map<String, Object>> queryBillMul(Long userId) {
+        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryBillMul", ParamsMap.newMap("userId", userId));
+        return resultList;
+    }
+
+    @Cacheable(key = "'performanceList$'+#type+'_'+#workId",condition = "#result != null")
+    public List<Map<String, Object>> queryPerformanceMul(String workId,int type) {
+        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryPerformanceMul", ParamsMap.newMap("workId", workId).addParams("type",type));
+        return resultList;
+    }
+
+    public List<Map<String, Object>> repayMind(int interval) {
+        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".repayMind", ParamsMap.newMap("interval", interval));
+        return resultList;
+    }
+
+    public List<Map<String, Object>> couponMind(int interval) {
+        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".couponMind", ParamsMap.newMap("interval", interval));
         return resultList;
     }
 }

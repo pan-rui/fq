@@ -3,7 +3,9 @@ package com.hy.aspect;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.hy.action.BaseAction;
+import com.hy.core.Constants;
 import com.hy.core.DataSourceHolder;
+import com.hy.core.Page;
 import com.hy.core.ParamsMap;
 import com.hy.core.Table;
 import com.hy.core.DataSource;
@@ -23,6 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -44,58 +48,62 @@ import java.util.Map;
 @Component
 @Aspect
 public class LogAspect extends BaseAction {
-	@Autowired
-	private BaseDao baseDao;
-	/*
-	 *
-	 * @Autowired private UserActionLogDao userActionLogDaoImpl;
-	 */
-	private Logger logger = LogManager.getLogger(LogAspect.class);
-	@Autowired
-	private SendMail sendMail;
-	@Value("#{config[adminEmail]}")
-	private String adminEmail;
+    @Autowired
+    private BaseDao baseDao;
+    /*
+     *
+     * @Autowired private UserActionLogDao userActionLogDaoImpl;
+     */
+    private Logger logger = LogManager.getLogger(LogAspect.class);
+    @Autowired
+    private SendMail sendMail;
+    @Value("#{config[adminEmail]}")
+    private String adminEmail;
 
-	private ThreadLocal<String> method = new ThreadLocal<>();
+    private ThreadLocal<String> method = new ThreadLocal<>();
 
-	@Pointcut("@annotation(com.hy.annotation.TradeLog)")
-	public void TradeLog() {
-	}
+    @Pointcut("@annotation(com.hy.annotation.TradeLog)")
+    public void TradeLog() {
+    }
 
-	@Pointcut("@annotation(com.hy.annotation.OperationLog))")
-	public void operationLog() {
-	}
+    @Pointcut("@annotation(com.hy.annotation.OperationLog))")
+    public void operationLog() {
+    }
 
-	// @Pointcut("@annotation(DataSource)")
-	@Pointcut("execution(* com.hy.dao..*Dao*.*(..)) && @annotation(com.hy.core.DataSource)")
-	public void dataSource() {
-	}
+    // @Pointcut("@annotation(DataSource)")
+    @Pointcut("execution(* com.hy.dao..*Dao*.*(..)) && @annotation(com.hy.core.DataSource)")
+    public void dataSource() {
+    }
 
-	@Pointcut("execution(* com.hy.service..*.get*(..)) || execution(* com.hy.service..*.query*(..))")
-	public void serviceSource() {
-	}
+    @Pointcut("execution(* com.hy.service..*.get*(..)) || execution(* com.hy.service..*.query*(..))")
+    public void serviceSource() {
+    }
+
+    @Pointcut("execution(* com.hy.dao..*Dao.*PageMul(..))")
+    public void paramsConvert() {
+    }
 
 /*	@Pointcut("")
-	public void serviceSource2() {
+    public void serviceSource2() {
 	}*/
 
-	@Before("TradeLog()")
-	public void doBefore(JoinPoint joinPoint) {
-		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
-				.getRequest();
-		Object user = request.getSession().getAttribute("user");
-		Integer userId = null;
-		if (user == null) {
-			Object[] obj = joinPoint.getArgs();
-			if (obj.length != 1 || !(obj[0] instanceof Map))
-				return;
-			Map params = (Map) obj[0];
-			userId = Integer.parseInt(
-					String.valueOf(params.get("userId") == null ? params.get("user_id") : params.get("userId")));// 获取当前用户ID
-		}
-		// else userId= Integer.parseInt(String.valueOf(((AccountUserDo)
-		// user).getId()));
-		String ip = getIpAddr(request);
+    @Before("TradeLog()")
+    public void doBefore(JoinPoint joinPoint) {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest();
+        Object user = request.getSession().getAttribute("user");
+        Integer userId = null;
+        if (user == null) {
+            Object[] obj = joinPoint.getArgs();
+            if (obj.length != 1 || !(obj[0] instanceof Map))
+                return;
+            Map params = (Map) obj[0];
+            userId = Integer.parseInt(
+                    String.valueOf(params.get("userId") == null ? params.get("user_id") : params.get("userId")));// 获取当前用户ID
+        }
+        // else userId= Integer.parseInt(String.valueOf(((AccountUserDo)
+        // user).getId()));
+        String ip = getIpAddr(request);
 		/*
 		 * 根据访问路径确定是用户操作记录还是管理员操作记录 SystemLog log = new SystemLog();
 		 * log.setDescription(getMethodDescription(joinPoint,0));
@@ -108,26 +116,26 @@ public class LogAspect extends BaseAction {
 		 * log.setCtime(Calendar.getInstance().getTime());
 		 * systemLogDao.save(log);
 		 */
-	}
+    }
 
-	@AfterThrowing(pointcut = "TradeLog()", throwing = "e")
-	public void doAfterThrowing(JoinPoint joinPoint, Throwable e) {
-		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
-				.getRequest();
-		Object user = request.getSession().getAttribute("user");
-		Integer userId = null;
-		if (user == null) {
-			Object[] obj = joinPoint.getArgs();
-			if (obj.length != 1 || !(obj[0] instanceof Map))
-				return;
-			Map params = (Map) obj[0];
-			userId = Integer.parseInt(
-					String.valueOf(params.get("userId") == null ? params.get("user_id") : params.get("userId")));// 获取当前用户ID
-		}
-		// else userId= Integer.parseInt(String.valueOf(((AccountUserDo)
-		// user).getId()));
-		String ip = getIpAddr(request);
-		String params = JSONArray.toJSONString(joinPoint.getArgs());
+    @AfterThrowing(pointcut = "TradeLog()", throwing = "e")
+    public void doAfterThrowing(JoinPoint joinPoint, Throwable e) {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest();
+        Object user = request.getSession().getAttribute("user");
+        Integer userId = null;
+        if (user == null) {
+            Object[] obj = joinPoint.getArgs();
+            if (obj.length != 1 || !(obj[0] instanceof Map))
+                return;
+            Map params = (Map) obj[0];
+            userId = Integer.parseInt(
+                    String.valueOf(params.get("userId") == null ? params.get("user_id") : params.get("userId")));// 获取当前用户ID
+        }
+        // else userId= Integer.parseInt(String.valueOf(((AccountUserDo)
+        // user).getId()));
+        String ip = getIpAddr(request);
+        String params = JSONArray.toJSONString(joinPoint.getArgs());
 		/*
 		 * SystemLog log = new SystemLog();
 		 * log.setDescription(getMethodDescription(joinPoint,1));
@@ -140,51 +148,51 @@ public class LogAspect extends BaseAction {
 		 * log.setCtime(Calendar.getInstance().getTime());
 		 * systemLogDao.save(log);
 		 */
-		logger.error(MessageFormat.format("异常方法:{}异常代码:{}异常信息:{}参数:{}",
-				joinPoint.getTarget().getClass().getName() + joinPoint.getSignature().getName(), e.getClass().getName(),
-				e.getMessage(), params));
-	}
+        logger.error(MessageFormat.format("异常方法:{}异常代码:{}异常信息:{}参数:{}",
+                joinPoint.getTarget().getClass().getName() + joinPoint.getSignature().getName(), e.getClass().getName(),
+                e.getMessage(), params));
+    }
 
-/*	@AfterReturning(pointcut = "operationLog()", returning = "returnObj")
-	public void doAfterReturn(JoinPoint joinPoint, Object returnObj) {*/
-@Before("operationLog()")
-public void logBefore(JoinPoint joinPoint) {
-		MethodSignature sig = (MethodSignature) joinPoint.getSignature();
-		Method method = sig.getMethod();
-		Parameter[] parameters = method.getParameters();
-		Object[] args = joinPoint.getArgs();
-		HttpServletRequest request = (HttpServletRequest) args[0];
-		String uri = request.getRequestURI();
-		Map<String,Object> argMap = new LinkedHashMap<>();
-		for (int i=0;i<args.length;i++) {
-			if(!(args[i] instanceof ServletRequest) && !(args[i] instanceof ServletResponse))
-				argMap.put(parameters[i].getName(),args[i]);
-		}
-		List<String> descriptions = Arrays.asList(method.getAnnotation(OperationLog.class).value());
-		List<String> tables = Arrays.asList(method.getAnnotation(OperationLog.class).table());
+    /*	@AfterReturning(pointcut = "operationLog()", returning = "returnObj")
+        public void doAfterReturn(JoinPoint joinPoint, Object returnObj) {*/
+    @Before("operationLog()")
+    public void logBefore(JoinPoint joinPoint) {
+        MethodSignature sig = (MethodSignature) joinPoint.getSignature();
+        Method method = sig.getMethod();
+        Parameter[] parameters = method.getParameters();
+        Object[] args = joinPoint.getArgs();
+        HttpServletRequest request = (HttpServletRequest) args[0];
+        String uri = request.getRequestURI();
+        Map<String, Object> argMap = new LinkedHashMap<>();
+        for (int i = 0; i < args.length; i++) {
+            if (!(args[i] instanceof ServletRequest) && !(args[i] instanceof ServletResponse))
+                argMap.put(parameters[i].getName(), args[i]);
+        }
+        List<String> descriptions = Arrays.asList(method.getAnnotation(OperationLog.class).value());
+        List<String> tables = Arrays.asList(method.getAnnotation(OperationLog.class).table());
 //		String username = (String) ((Map) SecurityUtils.getSubject().getPrincipal()).get("username");
 //		String username = (String) request.getAttribute(Constants.USER_PHONE);
 //		String tenantId=(String) ((Map) SecurityUtils.getSubject().getPrincipal()).get("tenantId");
 //		String tenantId=(String) request.getHeader(Constants.TENANT_ID);
 //		String ddBB=(String) ((Map) SecurityUtils.getSubject().getPrincipal()).get("ddBB");
 //		String ddBB=(String) request.getAttribute(Constants.DDBB);
-		String fromUrl = request.getHeader("Referer");
+        String fromUrl = request.getHeader("Referer");
 //		String appVersion = request.getHeader(Constants.APP_VERSION);
-		String ip = getIpAddr(request);
-		ParamsMap paramsMap = ParamsMap.newMap("URI", uri).addParams("REFER", fromUrl).addParams("ARGS", JSON.toJSONString(argMap)).addParams("USERNAME", "").addParams("TENANT_ID", "")
-				.addParams("OPERATION_TIME", new Date()).addParams("DESCRIPTION", JSON.toJSONString(descriptions)).addParams("OPERATION_TABLE", JSON.toJSONString(tables)).addParams("REQ_IP", ip).addParams("CLIENT_TYPE", "");
-		try {
-			baseDao.insertByProsInTab(Table.SEPARATE + "OPERATION_LOG",paramsMap);        //TODO:换表名
-		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("保存操作日志失败\n"+e.getMessage());
-		}
-	}
+        String ip = getIpAddr(request);
+        ParamsMap paramsMap = ParamsMap.newMap("URI", uri).addParams("REFER", fromUrl).addParams("ARGS", JSON.toJSONString(argMap)).addParams("USERNAME", "").addParams("TENANT_ID", "")
+                .addParams("OPERATION_TIME", new Date()).addParams("DESCRIPTION", JSON.toJSONString(descriptions)).addParams("OPERATION_TABLE", JSON.toJSONString(tables)).addParams("REQ_IP", ip).addParams("CLIENT_TYPE", "");
+        try {
+            baseDao.insertByProsInTab(Table.SEPARATE + "OPERATION_LOG", paramsMap);        //TODO:换表名
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("保存操作日志失败\n" + e.getMessage());
+        }
+    }
 
-	public String getMethodValue(JoinPoint joinPoint, int type) {
-		MethodSignature sig = (MethodSignature) joinPoint.getSignature();
-		Method method = sig.getMethod();
-		return method.getAnnotation(DataSource.class).value().name();
+    public String getMethodValue(JoinPoint joinPoint, int type) {
+        MethodSignature sig = (MethodSignature) joinPoint.getSignature();
+        Method method = sig.getMethod();
+        return method.getAnnotation(DataSource.class).value().name();
 /*		switch (type) {
 		case 1:
 			return method.getAnnotation(TradeLog.class).value();
@@ -195,7 +203,7 @@ public void logBefore(JoinPoint joinPoint) {
 		default:
 			return "";
 		}*/
-	}
+    }
 
 /*	public Method getMethod(JoinPoint joinPoint) {
 		Object[] objs = joinPoint.getArgs();
@@ -214,24 +222,44 @@ public void logBefore(JoinPoint joinPoint) {
 		return method;
 	}*/
 
-	@Before("dataSource()")
-	@Order(1002)
-	public void sqlBefore(JoinPoint joinPoint) {
-		DataSourceHolder.DBType dbType = DataSourceHolder.DBType.valueOf(getMethodValue(joinPoint, 3));
-		DataSourceHolder.setLocalDataSource(dbType);
-	}
+    @Before("dataSource()")
+    @Order(1002)
+    public void sqlBefore(JoinPoint joinPoint) {
+        DataSourceHolder.DBType dbType = DataSourceHolder.DBType.valueOf(getMethodValue(joinPoint, 3));
+        DataSourceHolder.setLocalDataSource(dbType);
+    }
 
-	@AfterReturning("serviceSource()")
-	@Order(1000)
-	public void serviceReturning(JoinPoint joinPoint) {
-		DataSourceHolder.setLocalDataSource(DataSourceHolder.DBType.master);
-	}
+    @AfterReturning("serviceSource()")
+    @Order(1000)
+    public void serviceReturning(JoinPoint joinPoint) {
+        DataSourceHolder.setLocalDataSource(DataSourceHolder.DBType.master);
+    }
 /*
 	@AfterReturning("serviceSource2()")
 	@Order(999)
 	public void serviceReturning2(JoinPoint joinPoint) {
 		DataSourceHolder.setLocalDataSource(DataSourceHolder.DBType.master);
 	}*/
+
+    @Before("paramsConvert()")
+    @Order(1003)
+    public void parameterConvert(JoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        Assert.isInstanceOf(Page.class,args[0],"请求参数非Page类型，请检查参数！");
+        Page page = (Page) args[0];
+        Map<String, Object> map = new LinkedHashMap<>(page.getParams());
+        map.forEach((k,v)->{
+            int indexOf = k.indexOf(Table.FIELD_INTERVAL);
+            page.getParams().put(k.substring(0,indexOf).toLowerCase() + Table.SEPARATE + k.substring(indexOf+1), page.getParams().remove(k));
+        });
+        if(!CollectionUtils.isEmpty(page.getMatchs())) {
+            map = new LinkedHashMap<>(page.getMatchs());
+            map.forEach((k, v) -> {
+                int indexOf = k.indexOf(Table.FIELD_INTERVAL);
+                page.getMatchs().put(k.substring(0,indexOf).toLowerCase() + Table.SEPARATE + k.substring(indexOf+1), page.getMatchs().remove(k));
+            });
+        }
+    }
 
 /*	@AfterThrowing(pointcut = "dataSource()", throwing = "e")
 	public void connectException(JoinPoint joinPoint, MyBatisSystemException e) throws DataAccessException {

@@ -52,7 +52,7 @@ public class GenerateAction {
         String jdbcUrl = "jdbc:mysql://192.168.3.254:3306/"+schema+"?useUnicode=true&characterEncoding=UTF-8&useSSL=false";
         String userId="root";
         String password = "hengyong321";
-        GenerateAction generateAction = new GenerateAction(schema,"com.hy.action", "E:\\IdeaProjects\\fq\\data\\src\\test\\java\\com\\hy\\gen\\","com.hy.core");//TODO:可指定单个Table
+        GenerateAction generateAction = new GenerateAction(schema,"com.hy.action", "D:\\workspace\\fq\\data\\src\\test\\java\\com\\hy\\gen\\","com.hy.core");//TODO:可指定单个Table
       // generateAction.tableName="USER";      //单表情况
         generateAction.tableName = "%";
 //        StringBuffer tables = new StringBuffer();
@@ -72,6 +72,8 @@ public class GenerateAction {
         sbTab.append("\tpublic static final String ID = \"ID\";\n");
         sbTab.append("\tpublic static final String IS_ENABLE = \"IS_ENABLE\";\n");
         sbTab.append("\tpublic static final String USER_ID = \"USER_ID\";\n");
+        sbTab.append("\tpublic static final String DESC = \"DESC\";\n");
+        sbTab.append("\tpublic static final String ASC = \"ASC\";\n");
 /*        sbTab.append("\tpublic static final String SEPARATE_TREE = \">\";\n");
 
         sbTab.append("\tpublic static final String ORDER_BY_DESC = \"DESC\";\n");

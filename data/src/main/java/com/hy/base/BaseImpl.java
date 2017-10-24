@@ -60,6 +60,7 @@ public class BaseImpl implements IBase, ApplicationContextAware, InitializingBea
     private String frontData;
     @Value("#{initData['backstageData']}")
     private String backstageData;
+    private static final Map<String, Map<String, String>> fqMap = new HashMap<>();
 
     public BaseImpl() {
 //        super(sqlSessionFactory);
@@ -143,23 +144,33 @@ public class BaseImpl implements IBase, ApplicationContextAware, InitializingBea
     }
 
     public void initColumns() {
-        List<Map<String, Object>> dataMeta = baseDao.queryByS("SELECT TABLE_NAME,COLUMN_NAME FROM information_schema.Columns  WHERE table_schema='fq'");
+        List<Map<String, Object>> dataMeta = baseDao.queryByS("SELECT TABLE_NAME,COLUMN_NAME,COLUMN_COMMENT FROM information_schema.Columns  WHERE table_schema='fq'");
         String prevTable = "";
         StringBuffer sb = new StringBuffer();
+        Map<String, String> tableMap=null;
         for (int i = 0; i < dataMeta.size(); i++) {
             Map<String, Object> map = dataMeta.get(i);
             String tableName = (String) map.get("TABLE_NAME");
+             tableMap= new HashMap<>();
+//            fqMap.put(Table.FQ + tableName, new HashMap<>());
+            String columnName= (String) map.get("COLUMN_NAME");
+            String columnComment = (String) map.get("COLUMN_COMMENT");
             if (tableName.equals(prevTable)) {
-                sb.append(Table.SEPARATE_SPLIT).append(map.get("COLUMN_NAME")).append(Table.SPACE).append(ColumnProcess.encryptVal((String) map.get("COLUMN_NAME")));
+                sb.append(Table.SEPARATE_SPLIT).append(columnName).append(Table.SPACE).append(ColumnProcess.encryptVal( columnName));
+                tableMap.put(columnName, columnComment);
             } else {
-                if (i != 0)
+                if (i != 0) {
                     cacheManager.getCache("columns").put(prevTable, sb.toString().substring(1));
+                    fqMap.put(prevTable, tableMap);
+                }
                 prevTable = tableName;
                 sb = new StringBuffer();
-                sb.append(Table.SEPARATE_SPLIT).append(map.get("COLUMN_NAME")).append(Table.SPACE).append(ColumnProcess.encryptVal((String) map.get("COLUMN_NAME")));
+                sb.append(Table.SEPARATE_SPLIT).append(columnName).append(Table.SPACE).append(ColumnProcess.encryptVal(columnName));
+                tableMap.put(columnName, columnComment);
             }
         }
         cacheManager.getCache("columns").put(prevTable, sb.toString().substring(1));
+        fqMap.put(prevTable, tableMap);
     }
 
     public void initSystemData() {
@@ -184,7 +195,10 @@ public class BaseImpl implements IBase, ApplicationContextAware, InitializingBea
             inits.forEach((tableName) -> {
                List<Map<String,Object>> results= baseDao.queryAllInTab(tableName);
                         if ("fq.SYSTEM_DICT".equals(tableName)) {
-                            results.forEach((sd) -> setCacheOfValue("system", sd.get("code"), sd.get("value")));
+                            results.forEach((sd) ->{
+                                if("1".equals(sd.get("isEnable")))
+                                    setCacheOfValue("system", sd.get("code"), sd.get("value"));
+                            });
                         }else
                 cacheManager.getCache("system").put(tableName.replace(".","-"),results);
             });
@@ -236,5 +250,9 @@ public class BaseImpl implements IBase, ApplicationContextAware, InitializingBea
 
     public BaseDao getBaseDao() {
         return this.baseDao;
+    }
+
+    public static Map<String, Map<String, String>> getFqMap() {
+        return fqMap;
     }
 }

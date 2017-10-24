@@ -11,9 +11,11 @@ import org.hibernate.validator.HibernateValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.NonTransientDataAccessException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -31,6 +33,7 @@ import javax.validation.Validation;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,8 +52,10 @@ public class BaseAction implements IBase, ServletContextAware {
 	@Autowired
 	protected BaseImpl baseImpl;
     private Logger logger = LogManager.getLogger(BaseAction.class);
+    private Pattern tableMatch=Pattern.compile("`?fq`?\\.`?([\\w]+)`?");
     private Pattern foreignKey=Pattern.compile("FOREIGN KEY\\s\\(`(\\w+)`\\)");
     private Pattern duplicateKey=Pattern.compile("Duplicate entry\\s\\'(\\w+)\\'");
+    private Pattern dataColumn=Pattern.compile("for column\\s\\'(\\w+)\\'");
     // TODO:待完善
 	/*
 	 * public String getMessage(HttpServletRequest request, String key,
@@ -61,24 +66,39 @@ public class BaseAction implements IBase, ServletContextAware {
 	@ExceptionHandler
 	@ResponseBody
 	public BaseResult exp(HttpServletRequest request, HttpServletResponse response, Exception ex) {
-		ex.printStackTrace();
+//		ex.printStackTrace();
 		if (ex instanceof HttpMessageNotReadableException) {
 			logger.error(ex.getMessage());
 			return new BaseResult(ReturnCode.FAIL);
-		} else if (ex instanceof ServletRequestBindingException || ex instanceof IllegalArgumentException) {
+		} else if (ex instanceof ServletRequestBindingException || ex instanceof IllegalArgumentException || ex instanceof ClassCastException) {
+			logger.error(ex.getMessage());
 			return new BaseResult(ReturnCode.REQUEST_PARAMS_VERIFY_ERROR);
 		} else if (ex instanceof DuplicateKeyException) {
 			String errMsg="";
-			Matcher matcher = duplicateKey.matcher(errMsg);
-			if(matcher.find(20))
+			Matcher matcher = duplicateKey.matcher(ex.getMessage());
+			if(matcher.find(30)) {
 				errMsg = matcher.group(1);
-			return new BaseResult(2202, "数据不可重复，请确认:"+errMsg);
+			}
+			logger.error(ex.getMessage());
+			return new BaseResult(2202, "数据不可重复，请检查:"+errMsg);
 		} else if (ex instanceof DataIntegrityViolationException) {
 			String errMsg="";
-			Matcher matcher = foreignKey.matcher(errMsg);
-			if(matcher.find(20))
+			Matcher matcher = foreignKey.matcher(ex.getMessage());
+			Matcher tMatch=tableMatch.matcher(ex.getMessage());
+			String fieldName = "数据";
+			if(matcher.find(30))
 				errMsg = matcher.group(1);
-			return new BaseResult(2203, "数据有误，外键约束。。。" + errMsg);
+			if (StringUtils.isEmpty(errMsg)) {
+				Matcher matcher2 = dataColumn.matcher(ex.getMessage());
+				if(matcher2.find(30))
+					errMsg = matcher2.group(1);
+			}
+			if(tMatch.find(80)) {
+				Map<String,String> fieldMap=BaseImpl.getFqMap().get(tMatch.group(1));
+				if(!CollectionUtils.isEmpty(fieldMap))
+				fieldName = fieldMap.get(errMsg);
+			}
+			return new BaseResult(2203, fieldName+"有误，请确认无误后重试." );
 		}
 			logger.error(ex.getMessage());
 		return new BaseResult(ReturnCode.SYSTEM_ERROR);

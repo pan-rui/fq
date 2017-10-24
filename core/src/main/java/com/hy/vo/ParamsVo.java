@@ -21,7 +21,7 @@ public class ParamsVo implements Serializable{
     //业务参数
     private ParamsMap<String,Object> reqData = null;
     
-    private String id;
+    private Object id;
 
     public ParamsMap<String, Object> getParams() {
         return params;
@@ -47,13 +47,13 @@ public class ParamsVo implements Serializable{
         this.reqData = reqData;
     }
 
-	public String getId() {
-		return id;
-	}
+    public Object getId() {
+        return id;
+    }
 
-	public void setId(String id) {
-		this.id = id;
-	}
+    public void setId(Object id) {
+        this.id = id;
+    }
 
     @Override
     public String toString() {

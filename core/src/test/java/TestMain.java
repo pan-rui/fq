@@ -2,6 +2,7 @@ import com.alibaba.fastjson.JSON;
 import com.hy.core.Base64;
 import com.hy.core.ColumnProcess;
 import com.hy.core.ParamsMap;
+import com.hy.core.Table;
 import com.hy.dao.BaseDao;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
@@ -172,11 +173,14 @@ public class TestMain {
                 ParamsMap.newMap("type", "view").addParams("name", new String("信息录入".getBytes(),"UTF-8")).addParams("url", "http://www.qugongdi.com/weChat/view/labour/user-message.html"),
                 ParamsMap.newMap("type", "view").addParams("name", new String("个人信息".getBytes(),"UTF-8")).addParams("url", "http://www.qugongdi.com/weChat/login.html")
         )));
-        System.out.println(JSON.toJSONString(ParamsMap.newMap("button", menuList)));
+        System.out.println(JSON.toJSONString(ParamsMap.newMap("button", menuList)));PRODUCT_ATTRIBUTE
     }*/
-public static void main(String[] args) {
+public static void main(String[] args) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchFieldException {
     String v1 = "hy_V2.3.2";
     String v2 = "hy_V1.4.2";
     System.out.println("v1  大于 v2  : "+(v1.compareTo(v2)>0));
+    System.out.println(ColumnProcess.decryptVal("pr_bizerId"));
+//    System.out.println(Class.forName("com.hy.core.Table$User").getField("BIZER_ID"));
+//    System.out.println(Enum.valueOf(Class.forName("com.hy.core.Table$User",false,Enum.class.getClassLoader()), "BIZER_ID").toString());
 }
 }

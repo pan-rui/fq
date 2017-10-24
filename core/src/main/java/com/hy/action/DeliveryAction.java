@@ -22,29 +22,33 @@ import org.springframework.web.bind.annotation.RestController;
 public class DeliveryAction extends BaseAction {
     @Autowired
     private BaseDao baseDao;
-    private String tableName=Table.FQ + Table.DELIVERY;
+    private String tableName = Table.FQ + Table.DELIVERY;
+
     @PostMapping("")
     public BaseResult addDelivery(@RequestHeader(Constants.USER_ID) String userId, @EncryptProcess ParamsVo paramsVo) {
         int isDefault = Integer.parseInt(String.valueOf(paramsVo.getParams().get(Table.Delivery.IS_DEFAULT.name())));
         if (isDefault == 1) {
-            baseDao.updateByProsInTab(tableName, ParamsMap.newMap(Table.Delivery.IS_DEFAULT.name(),0));
+            baseDao.updateByProsInTab(tableName, ParamsMap.newMap(Table.Delivery.IS_DEFAULT.name(), 0));
         }
-        int count=baseDao.insertByProsInTab(tableName, paramsVo.getParams());
+        int count = baseDao.insertByProsInTab(tableName, paramsVo.getParams());
         return count > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
     }
 
     @PutMapping("")
     public BaseResult updateDelivery(@RequestHeader(Constants.USER_ID) String userId, @EncryptProcess ParamsVo paramsVo) {
-        int count=baseDao.updateByProsInTab(tableName, paramsVo.getParams().addParams(Table.ID,paramsVo.getParams().remove(Table.ID)));
+        int count = baseDao.updateByProsInTab(tableName, paramsVo.getParams().addParams(Table.ID, paramsVo.getParams().remove(Table.ID)));
         return count > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
     }
+
     @PatchMapping("")
     public BaseResult deleteDelivery(@RequestHeader(Constants.USER_ID) String userId, @EncryptProcess ParamsVo paramsVo) {
-        int count=baseDao.updateByProsInTab(tableName, paramsVo.getParams().addParams(Table.Delivery.IS_ENABLE.name(),0).addParams(Table.ID,paramsVo.getParams().get(Table.ID)));
+        int count = baseDao.updateByProsInTab(tableName, paramsVo.getParams().addParams(Table.Delivery.IS_ENABLE.name(), 0).addParams(Table.ID, paramsVo.getParams().remove(Table.ID)));
         return count > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
     }
+
     @PostMapping("list")
     public BaseResult getDeliveryList(@RequestHeader(Constants.USER_ID) String userId, @EncryptProcess ParamsVo paramsVo) {
-        return new BaseResult(ReturnCode.OK, baseDao.queryByProsInTab(tableName, paramsVo.getParams()));
+        return new BaseResult(ReturnCode.OK, baseDao.queryListInTab(tableName, paramsVo.getParams().addParams(Table.Delivery.IS_ENABLE.name(), 1)
+                , ParamsMap.newMap(Table.Delivery.IS_DEFAULT.name(), Table.DESC).addParams(Table.Delivery.CTIME.name(), Table.DESC)));
     }
 }

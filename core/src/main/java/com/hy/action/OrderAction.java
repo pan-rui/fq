@@ -11,13 +11,19 @@ import com.hy.core.ParamsMap;
 import com.hy.core.Table;
 import com.hy.dao.BaseDao;
 import com.hy.service.OrderService;
+import com.hy.task.OrderPayRemind;
 import com.hy.util.ImageCode;
+import com.hy.util.TriggerUtil;
 import com.hy.vo.ParamsVo;
+import org.apache.commons.lang.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.shiro.util.Assert;
 import org.aspectj.apache.bcel.generic.RET;
+import org.quartz.JobDataMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -43,6 +49,7 @@ public class OrderAction extends BaseAction {
     private OrderService orderService;
     private static final Logger logger = LogManager.getLogger(OrderAction.class);
     private String tableName = Table.FQ + Table.ORDER;
+    private static final String orderPayRemind = "ORDER_PAY_REMIND";
     @PostMapping("/add")
     public BaseResult addOrder(HttpServletRequest request,@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess ParamsVo paramsVo) {
         ParamsMap<String,Object> order=paramsVo.getParams();
@@ -80,9 +87,14 @@ public class OrderAction extends BaseAction {
         order.addParams(Table.Order.PAY_MONEY.name(), payMoney.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());        //首付
         //月供=（总额 - 首付）/期数 +（总额 - 首付）* 月利率
         BigDecimal remain=orderMoney.subtract(payMoney);
-        BigDecimal MONTHLY = remain.divide(new BigDecimal((int) period.get("PERIOD")),2,BigDecimal.ROUND_HALF_UP).add(remain.multiply(new BigDecimal((String) period.get("RATE"))));
+        BigDecimal MONTHLY = remain.divide(new BigDecimal(String.valueOf(period.get("PERIOD"))),2,BigDecimal.ROUND_HALF_UP).add(remain.multiply(new BigDecimal(String.valueOf(period.get("RATE")))));
         order.addParams(Table.Order.MONTHLY.name(), MONTHLY.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());       //月供
         int count=baseDao.insertByProsInTab(tableName, order);
+        if(count>0){            //付款通知
+            String delay=Constants.getSystemStringValue(orderPayRemind);
+            Date date=new Date(System.currentTimeMillis()+ (StringUtils.isEmpty(delay)?7200000L:Integer.parseInt(delay)));
+            TriggerUtil.simpleTask(new JobDataMap(ParamsMap.newMap("dao",baseDao).addParams("orderId",order.get("id")).addParams("userId",uId)), OrderPayRemind.class,date);
+        }
         return count>0?new BaseResult(ReturnCode.OK, ColumnProcess.encryMap(order)):new BaseResult(ReturnCode.FAIL);
     }
 
@@ -97,21 +109,26 @@ public class OrderAction extends BaseAction {
         return new BaseResult(ReturnCode.OK, page);
     }
 
+    @PostMapping("pay")
     public BaseResult payOrder(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess ParamsVo paramsVo) {
-        BaseResult baseResult=orderService.pay(paramsVo.getParams());
+            Map<String,Object> orderMap=baseDao.queryByIdInTab(Table.FQ+Table.ORDER,paramsVo.getId());
+        Assert.notNull(orderMap,"无此订单。");
+        BaseResult baseResult=orderService.pay(orderMap);
         if (baseResult.getCode() == 0) {
-            Map<String,Object> orderMap=paramsVo.getParams();
-            Map<String, Object> periodMap = (Map<String, Object>) paramsVo.getParams().get(Table.Order.PERIOD.name());
-            Long uId = (Long) orderMap.get(Table.Order.USER_ID.name());
+            Map<String, Object> periodMap = JSON.parseObject((String) orderMap.get("period")) ;
+            Long uId = (Long) orderMap.get("userId");
             int period= (int) periodMap.get("PERIOD");
             Calendar calendar=Calendar.getInstance();
             List<Map<String, Object>> srcList = new ArrayList<>();
+            String repayDate = Constants.getSystemStringValue("REPAY_DATE");
+            if(!StringUtils.isEmpty(repayDate)&&!"0".equals(repayDate.trim())&& NumberUtils.isNumber(repayDate))
+                calendar.set(Calendar.DAY_OF_MONTH,Integer.parseInt(repayDate));
             for(int i=1;i<=period;i++) {
                 calendar.add(Calendar.MONTH,1);
                 ParamsMap planRepayMap = ParamsMap.newMap(Table.PlanRepayment.USER_ID.name(), uId)
-                        .addParams(Table.PlanRepayment.ORDER_ID.name(), orderMap.get(Table.PlanRepayment.ORDER_ID.name()))
+                        .addParams(Table.PlanRepayment.ORDER_ID.name(), orderMap.get("id"))
                         .addParams(Table.PlanRepayment.PLANREPAY_DATE.name(), calendar.getTime())
-                        .addParams(Table.PlanRepayment.PLANREPAY_MONEY.name(), orderMap.get(Table.Order.MONTHLY.name()))
+                        .addParams(Table.PlanRepayment.PLANREPAY_MONEY.name(), orderMap.get("monthly"))
                         .addParams(Table.PlanRepayment.REPAY_NUM.name(), i)
                         .addParams(Table.PlanRepayment.STATUS.name(), "0")      //0未还
                         .addParams(Table.PlanRepayment.UP_ID.name(), userId);

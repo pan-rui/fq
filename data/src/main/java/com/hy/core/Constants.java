@@ -84,8 +84,8 @@ public class Constants {
         return getCacheStringValue("system", key);
     }
 
-    public static String getQCacheValue(String key) {
-        return getCacheStringValue("qCache", key);
+    public static String getTmpValue(String key) {
+        return getCacheStringValue("tmp", key);
     }
 
     public static String getCacheStringValue(String cacheName, String key) {

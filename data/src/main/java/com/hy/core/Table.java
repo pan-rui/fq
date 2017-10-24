@@ -9,6 +9,8 @@ public class Table {
 	public static final String ID = "ID";
 	public static final String IS_ENABLE = "IS_ENABLE";
 	public static final String USER_ID = "USER_ID";
+	public static final String DESC = "DESC";
+	public static final String ASC = "ASC";
 	//
 	public static final String ACCOUNT="ACCOUNT";
 	//
@@ -25,6 +27,10 @@ public class Table {
 	public static final String CLASSIFY="CLASSIFY";
 	//
 	public static final String COMPANY="COMPANY";
+	//
+	public static final String COUPON="COUPON";
+	//
+	public static final String COUPON_DICT="COUPON_DICT";
 	//
 	public static final String C_POSITION_SERIES="C_POSITION_SERIES";
 	//
@@ -190,6 +196,27 @@ public class Table {
 		IS_ENABLE,	//1：正常；0：删除
 	}
 
+	public enum Coupon{
+		ID,	//ID
+		USER_ID,	//用户id
+		COUPON_ID,	//礼券id
+		CTIME,	//创建时间
+		REMARK,	//备注
+		STATUS,	//状态{"1":"未领取","2","未使用","3":"已使用","4":"未领取过期","5":"未使用过期","6":"处理中"}
+	}
+
+	public enum CouponDict{
+		ID,	//ID
+		COUPON_NAME,	//礼券名称
+		COUPON_AMOUNT,	//礼券金额
+		CTIME,	//创建时间
+		REMARK,	//备注(code)
+		IS_ENABLE,	//状态{"1":"启用","0":"禁用"}
+		IS_WITHDRAW,	//允许提现{"1":"是","0":"否"}
+		COUPON_TYPE,	//类型{"0":"红包","1":"推荐奖励","2":"其它"}
+		EXPIRE_DATE,	//过期时间
+	}
+
 	public enum CPositionSeries{
 		ID,	//主键
 		PRODUCT_ID,	//产品ID
@@ -254,7 +281,7 @@ public class Table {
 		ZIP,	//邮编
 		MARK,	//标签
 		IS_DEFAULT,	//默认地址:{"1":"是","0":"否"}
-		IS_ENABLE,	//:{"1":"启用","0":"禁用"}
+		IS_ENABLE,	//是否启用：1启用，0禁用
 		CTIME,	//创建时间
 	}
 
@@ -271,13 +298,14 @@ public class Table {
 		REG_ADDR,	//户籍地址
 		DIPLOMA,	//学历
 		ADDR,	//现住址
+		OSS_ID,	//
 		DEPT,	//部门
 		UP_NAME,	//上级姓名
 		UP_PHONE,	//上级电话
 		CTIME,	//创建时间
 		UP_ID,	//修改人ID
 		UTIME,	//修改时间
-		STATE,	//0:正常,1：离职,2:停用
+		STATE,	//0:停用,1:正常,2：离职
 	}
 
 	public enum Merchant{
@@ -324,10 +352,11 @@ public class Table {
 		ORDER_MONEY,	//订单金额
 		MONTHLY,	//月供
 		PAY_NO,	//支付流水号
-		STATE,	//订单状态{"0":"下单待付款","1":"待发货","2":"待收货","3":"申请退款中","4":"退款审核失败","5":"收货确认中","6":"待放款","7":"交易完成","8":"已取消","9":"已退货"}
+		STATE,	//订单状态{"0":"下单待付款","1":"待发货","2":"待收货","3":"申请退款中","4":"退款审核失败","5":"收货确认中","6":"待放款","7":"还款中","8":"已取消","9":"已退货","10":"已还款"}
 		DESCRIPTION,	//描述
 		DELIVERY_DATE,	//配送时间:{"1234567":"周一至周日","12345":"(工作日)周一至周五","67":"节假日(周六周日)"}
 		PAY_INFO,	//支付详情
+		PAY_TIME,	//付款时间
 		SHIPMENTS_TIME,	//发货时间
 		END_DELIVERY_TIME,	//收货时间
 		LOGISTICS,	//物流公司
@@ -349,11 +378,12 @@ public class Table {
 		REPAY_TYPE,	//还款类型
 		PLANREPAY_DATE,	//计划还款日
 		PLANREPAY_MONEY,	//计划还款金额
+		OVERDUE,	//逾期利息
 		PAY_DATE,	//实际还款日
 		USE_SCORE,	//积分抵扣金额
 		REAL_REPAY_MONEY,	//实际还款金额
 		TRADE_NO,	//流水号
-		STATUS,	//结清状态：0:已还,1:未还,2:提前还,3:逾期
+		STATUS,	//结清状态：1:已还,0:未还,2:提前还,3:逾期
 		CTIME,	//创建时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间
@@ -373,6 +403,7 @@ public class Table {
 		TAGS,	//标签id 使用,分隔
 		ATT_JSON,	//[{属性组:{属性1:值1，属性2:值2...},库存:xx,累积售出:xx,进货价:XX,售价:xx,优惠价:xxx}...]
 		PERIODS,	//[{期数:xx,首付比:xx,分期利率:xx,手续费:xxx,产品险:xx}...]
+		PERIOD_EXT,	//{首付比:[……],产品险:[…….]}
 		INTRO,	//商品简介
 		DETAILS,	//商品详情
 		FAQ,	//常见问题
@@ -540,6 +571,8 @@ public class Table {
 	public enum User{
 		ID,	//用户ID
 		NAME,	//客户名称
+		USER_NAME,	//用户名
+		NICKNAME,	//昵称
 		SEX,	//客户性别:1男,0女
 		TYPE,	//客户类型
 		CARD_NO,	//身份证号码
@@ -554,7 +587,7 @@ public class Table {
 		SOCIAL_NUMBER,	//社保号码
 		DEGREE,	//教育程度
 		MARRY,	//婚姻状况
-		EMAILL,	//电子邮件
+		EMAIL,	//电子邮件
 		FIRST_WORKTIME,	//首次参加工作时间
 		CHILDREN_NUMBER,	//子女数目
 		ADDRE_REGIST,	//户籍地址
@@ -585,7 +618,7 @@ public class Table {
 		LIVE_POSTCODE,	//居住邮编
 		UNIT_PHONE,	//单位电话
 		UNIT_EXT_PHONE,	//单位电话分机
-		POST_ADDRESS,	//邮寄地址
+		TPOS_INFO,	//来源信息:{tposName:wx,tposId:openId,tAccount:234353,tNickName:haha,......}
 		CAREER,	//职业
 		PARTER_NAME,	//配偶姓名
 		UNIT_WORKTIME,	//现单位工作时长/距毕业时长（月份）

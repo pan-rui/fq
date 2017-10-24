@@ -76,7 +76,7 @@
         <dependency>
             <groupId>cn.jpush.api</groupId>
             <artifactId>jpush-client</artifactId>
-            <version>3.3.1</version>
+            <version>3.3.2</version>
         </dependency>
         <dependency>
             <groupId>cn.jpush.api</groupId>
@@ -93,14 +93,14 @@
             <artifactId>core</artifactId>
             <version>3.2.3</version>
             <scope>system</scope>
-            <systemPath>E:/IdeaProjects/fq/core/libs/aliyun-java-sdk-core-3.2.3.jar</systemPath>
+            <systemPath>D:/workspace/fq/core/libs/aliyun-java-sdk-core-3.2.3.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.alicom</groupId>
             <artifactId>dysmsapi</artifactId>
             <version>1.0.0</version>
             <scope>system</scope>
-            <systemPath>E:/IdeaProjects/fq/core/libs/aliyun-java-sdk-dysmsapi-1.0.0.jar</systemPath>
+            <systemPath>D:/workspace/fq/core/libs/aliyun-java-sdk-dysmsapi-1.0.0.jar</systemPath>
             <!--<systemPath>${project.basedir}/libs/aliyun-java-sdk-dysmsapi-1.0.0.jar</systemPath>-->
         </dependency>
         <dependency>

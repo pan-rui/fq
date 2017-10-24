@@ -13,6 +13,7 @@ import com.hy.core.Table;
 import com.hy.dao.BaseDao;
 import com.hy.dao.CommonDao;
 import com.hy.service.CommonService;
+import com.hy.service.OrderService;
 import com.hy.service.UserService;
 import com.hy.util.AliUtil;
 import com.hy.util.ImageCode;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -60,18 +62,20 @@ public class CommonAction extends BaseAction {
     private CommonDao commonDao;
     @Autowired
     private CommonService commonService;
+    @Autowired
+    private OrderService orderService;
     @Value("#{config['sessionExpireTime']}")
     private int sessionExpire;
     private String userTable = Table.FQ + Table.USER;
     private String saleTable = Table.FQ + Table.EMPLOYEE;
 
     @PostMapping("/upload/file")
-    public BaseResult uploadImg(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.APP_VER) String appVer,@RequestHeader(Constants.USER_PHONE) String phone, @RequestParam("file") MultipartFile file, @RequestParam("fileType") String fileType) throws IOException {
-        return commonService.uploadImg(appVer,userId, phone, file, fileType);
+    public BaseResult uploadImg(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_PHONE) String phone, @RequestParam("file") MultipartFile file, @RequestParam("fileType") String fileType) throws IOException {
+        return commonService.uploadImg(appVer, userId, phone, file, fileType);
     }
 
     @PostMapping("/upload/files")
-    public BaseResult uploadImgs(HttpServletRequest request,String userId) throws IOException, ServletException {
+    public BaseResult uploadImgs(HttpServletRequest request, String userId) throws IOException, ServletException {
         MultiValueMap<String, MultipartFile> fileMap = ((DefaultMultipartHttpServletRequest) request).getMultiFileMap();
         if (fileMap == null || fileMap.size() == 0) {
             return new BaseResult(ReturnCode.REQUEST_PARAMS_VERIFY_ERROR);
@@ -86,8 +90,8 @@ public class CommonAction extends BaseAction {
             File newFile = new File(ImgUtil.BASE_PATH + path);
             file.transferTo(newFile);
             jsonArray.add(path);
-            attachs.add(ParamsMap.newMap(Table.UserAttach.ATTACH_TYPE.name(),request.getParameter("fileType"+i)).addParams(Table.UserAttach.URL.name(), path).addParams(Table.UserAttach.ATTACH_LEN.name(), newFile.length())
-                    .addParams(Table.UserAttach.UP_ID.name(), userId).addParams(Table.UserAttach.USER_ID.name(),userId).addParams(Table.UserAttach.IS_ENABLE.name(), 1));
+            attachs.add(ParamsMap.newMap(Table.UserAttach.ATTACH_TYPE.name(), request.getParameter("fileType" + i)).addParams(Table.UserAttach.URL.name(), path).addParams(Table.UserAttach.ATTACH_LEN.name(), newFile.length())
+                    .addParams(Table.UserAttach.UP_ID.name(), userId).addParams(Table.UserAttach.USER_ID.name(), userId).addParams(Table.UserAttach.IS_ENABLE.name(), 1));
         }
         baseDao.insertUpdateBatchByProsInTab(Table.FQ + Table.USER_ATTACH, attachs);
         return new BaseResult(ReturnCode.OK, jsonArray);
@@ -208,15 +212,16 @@ public class CommonAction extends BaseAction {
         commonDao.queryXZUserPageMul(page);
         return new BaseResult(ReturnCode.OK, page);
     }
+
     @PostMapping("dshUser")
-    public BaseResult dshUser(@RequestHeader(Constants.USER_ID) String userId, @EncryptProcess Page page) {
+    public BaseResult dshUser(@RequestHeader(Constants.USER_ID) String uId, @EncryptProcess Page page) {
         commonDao.queryDSHUserPageMul(page);
         return new BaseResult(ReturnCode.OK, page);
     }
 
     @PutMapping("edit")
-    public Object updateUser(@RequestHeader(Constants.APP_VER)String appVer,@EncryptProcess ParamsVo params) {
-        String tableName=appVer.startsWith(Constants.USER)?userTable:saleTable;
+    public Object updateUser(@RequestHeader(Constants.APP_VER) String appVer, @EncryptProcess ParamsVo params) {
+        String tableName = appVer.startsWith(Constants.USER) ? userTable : saleTable;
         ParamsMap<String, Object> map = params.getParams();
         String phone = (String) map.get(Table.User.PHONE.name());
         int count = baseDao.updateByProsInTab(tableName, params.getParams());
@@ -224,12 +229,32 @@ public class CommonAction extends BaseAction {
     }
 
     @PostMapping("passwd")
-    public Object modifyPasswd(@RequestHeader(Constants.USER_ID) String uId,@RequestHeader(Constants.APP_VER)String appVer,@RequestParam String oldPasswd, @RequestParam String newPasswd) {
-        String tableName=appVer.startsWith(Constants.USER)?userTable:saleTable;
+    public Object modifyPasswd(@RequestHeader(Constants.USER_ID) String uId, @RequestHeader(Constants.APP_VER) String appVer, @RequestParam String oldPasswd, @RequestParam String newPasswd) {
+        String tableName = appVer.startsWith(Constants.USER) ? userTable : saleTable;
         Map<String, Object> userMap = baseDao.queryByIdInTab(tableName, uId);
         if (!StringUtils.isEmpty(newPasswd) && userMap.get("pwd").equals(oldPasswd)) {
             int count = baseDao.updateByProsInTab(tableName, ParamsMap.newMap(Table.User.PWD.name(), newPasswd).addParams(Table.ID, uId));
             return count > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
         } else return new BaseResult(ReturnCode.FAIL);
     }
+
+    @GetMapping("bill/{userId:[0-9]+}")
+    public BaseResult billInfo(@RequestHeader(Constants.USER_ID) String uId,@PathVariable Long userId) {
+        List<Map<String, Object>> resultList = commonDao.queryBillMul(userId);
+        return new BaseResult(0, resultList);
+    }
+
+    @PostMapping("repay/{repayId:[0-9]+}")
+    public BaseResult repay(@RequestHeader(Constants.USER_ID) String uId, @PathVariable Long repayId,@RequestParam Long periodNum) {
+        Map<String, Object> repayMap = baseDao.queryByIdInTab(Table.FQ + Table.PLAN_REPAYMENT, repayId);
+        BaseResult baseResult = orderService.repay(repayMap);       //支付接口
+        if (baseResult.getCode() == 0) {
+            long diffSecond=System.currentTimeMillis()-((Date)repayMap.get("planrepayDate")).getTime();
+            baseDao.updateByProsInTab(Table.FQ + Table.PLAN_REPAYMENT, ParamsMap.newMap(Table.PlanRepayment.STATUS.name(), diffSecond > 0 ? "1" : "2").addParams(Table.PlanRepayment.PAY_DATE,new Date()).addParams(Table.ID, repayId));
+            if(periodNum==repayMap.get("repayNum"))
+                baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "10").addParams(Table.ID, repayMap.get("orderId")));           //更新订单状态
+        }
+        return baseResult;
+    }
+
 }

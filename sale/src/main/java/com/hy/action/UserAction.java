@@ -8,6 +8,8 @@ import com.hy.core.ParamsMap;
 import com.hy.core.SerializeUtil;
 import com.hy.core.Table;
 import com.hy.dao.BaseDao;
+import com.hy.dao.CommonDao;
+import com.hy.service.CommonService;
 import com.hy.service.UserService;
 import com.hy.util.ImageCode;
 import com.hy.vo.ParamsVo;
@@ -15,9 +17,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -33,6 +39,10 @@ public class UserAction extends BaseAction {
     private int sessionExpire;
     @Autowired
     private UserService userService;
+    @Autowired
+    private CommonService commonService;
+    @Autowired
+    private CommonDao commonDao;
     @Autowired
     private BaseDao baseDao;
     private String tableName = Table.FQ + Table.EMPLOYEE;
@@ -67,6 +77,19 @@ public class UserAction extends BaseAction {
             Constants.setCacheOnExpire(CacheKey.U_TOKEN_Prefix + phone, token, sessionExpire);
             return new BaseResult(0, ParamsMap.newMap("token", token).addParams("userInfo", user));
         } else return new BaseResult(ReturnCode.LOGIN_PWD_ERROR);
+    }
+
+    /**
+     * 业绩
+     * @param uId
+     * @param workId
+     * @param type
+     * @return
+     */
+    @GetMapping("performance/{workId}-{type}")
+    public BaseResult performance(@RequestHeader(Constants.USER_ID) String uId, @PathVariable String workId, @PathVariable int type) {
+        List<Map<String, Object>> resultList = commonDao.queryPerformanceMul(workId, type);
+        return new BaseResult(0, resultList);
     }
 
 }

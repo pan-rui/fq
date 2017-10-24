@@ -10,10 +10,27 @@
 	</select>
 
     <select id="queryCJUserPageMul" resultMap="cjUserMap" parameterType="map">
-   SELECT u.*,o.*,c.* FROM fq.USER u
-JOIN fq.ORDER o ON u.ID=o.USER_ID
-LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
- WHERE o.STATE > '0' AND u.BIZER_ID=#{page.params.WORK_ID}
+        SELECT u.*,o.*,c.* FROM fq.USER u
+        JOIN fq.ORDER o ON u.ID=o.USER_ID
+        LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        WHERE o.STATE > '0'
+        <trim prefix="and" prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" separator=" and ">
+                <if test="null != item">
+                    ${key}=#{item}
+                </if>
+            </foreach>
+        </trim>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="(" close=")" separator=" or ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <!--AND u.BIZER_ID=#{page.params.WORK_ID}-->
     </select>
 
     <resultMap id="cjUserMap" type="java.util.LinkedHashMap">
@@ -29,7 +46,8 @@ LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
         <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
             <id property="id" column="id"/>
         </association>
-        <collection property="orders" ofType="java.util.LinkedHashMap" javaType="ArrayList" columnPrefix="o_" autoMapping="true">
+        <collection property="orders" ofType="java.util.LinkedHashMap" javaType="ArrayList" columnPrefix="o_"
+                    autoMapping="true">
             <id property="id" column="id"></id>
             <!--            <result property="householdChartId" column="hca_householdChartId"/>
                         <result property="houseHoldChartTypeId" column="hca_houseHoldChartTypeId"/>
@@ -43,16 +61,35 @@ LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
     </resultMap>
 
     <select id="querySBUserPageMul" resultMap="sbMap" parameterType="map">
-SELECT u.*,c.*,o.*
-FROM fq.USER u
-  left JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
-  LEFT JOIN fq.ORDER o ON u.ID=o.USER_ID
-WHERE o.STATE='0' AND u.BIZER_ID=#{page.params.WORK_ID}
-<!--/*SELECT u.*,o.*
-FROM fq.USER u
-  LEFT JOIN fq.ORDER o ON u.ID=o.USER_ID
-WHERE (u.CERT_STATUS !='4' OR (o.STATE='0' OR o.STATE =NULL )) AND u.BIZER_ID=#{page.params.WORK_ID}*/
--->
+        SELECT u.*,c.*,o.*
+        FROM fq.USER u
+        left JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        LEFT JOIN fq.ORDER o ON u.ID=o.USER_ID
+        WHERE o.STATE='0'
+        <trim prefix="and" prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" separator=" and ">
+                <if test="null != item">
+                    ${key}=#{item}
+                </if>
+            </foreach>
+        </trim>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="(" close=")" separator=" or ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <!--
+        AND u.BIZER_ID=#{page.params.WORK_ID}
+        -->
+        <!--/*SELECT u.*,o.*
+        FROM fq.USER u
+          LEFT JOIN fq.ORDER o ON u.ID=o.USER_ID
+        WHERE (u.CERT_STATUS !='4' OR (o.STATE='0' OR o.STATE =NULL )) AND u.BIZER_ID=#{page.params.WORK_ID}*/
+        -->
     </select>
 
     <resultMap id="sbMap" type="java.util.LinkedHashMap">
@@ -62,22 +99,40 @@ WHERE (u.CERT_STATUS !='4' OR (o.STATE='0' OR o.STATE =NULL )) AND u.BIZER_ID=#{
         <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
             <id property="id" column="id"/>
         </association>
-        <collection property="orders" ofType="java.util.LinkedHashMap" javaType="ArrayList" columnPrefix="o_" autoMapping="true">
+        <collection property="orders" ofType="java.util.LinkedHashMap" javaType="ArrayList" columnPrefix="o_"
+                    autoMapping="true">
             <id property="id" column="id"/>
         </collection>
     </resultMap>
 
     <select id="queryDYHUserPageMul" parameterType="map" resultMap="dyhMap">
-SELECT u.*,pr.*,o.* ,c.* FROM fq.USER u
-JOIN fq.PLAN_REPAYMENT pr ON u.ID=pr.USER_ID
-JOIN fq.ORDER o ON pr.ORDER_ID=o.ID
-LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
-WHERE u.BIZER_ID=#{page.params.WORK_ID} and pr.STATUS='0' and date_format(pr.PAY_DATE,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+        SELECT u.*,pr.*,o.* ,c.* FROM fq.USER u
+        JOIN fq.PLAN_REPAYMENT pr ON u.ID=pr.USER_ID
+        JOIN fq.ORDER o ON pr.ORDER_ID=o.ID
+        LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        WHERE pr.STATUS='0' and date_format(pr.PAY_DATE,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+        <trim prefix="and" prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" separator=" and ">
+                <if test="null != item">
+                    ${key}=#{item}
+                </if>
+            </foreach>
+        </trim>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="(" close=")" separator=" or ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <!--u.BIZER_ID=#{page.params.WORK_ID} and-->
     </select>
 
     <resultMap id="dyhMap" type="java.util.LinkedHashMap">
         <association property="user" columnPrefix="u_" javaType="map" autoMapping="true">
-        <id property="id" column="id"></id>
+            <id property="id" column="id"></id>
         </association>
         <association property="company" javaType="java.util.LinkedHashMap" columnPrefix="c_" autoMapping="true">
             <id property="id" column="id"/>
@@ -99,12 +154,29 @@ WHERE u.BIZER_ID=#{page.params.WORK_ID} and pr.STATUS='0' and date_format(pr.PAY
         JOIN fq.PLAN_REPAYMENT pr ON u.ID=pr.USER_ID
         JOIN fq.ORDER o ON pr.ORDER_ID=o.ID
         LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
-        WHERE u.BIZER_ID=#{page.params.WORK_ID} and pr.STATUS='0' and date_format(pr.PAY_DATE,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+        WHERE pr.STATUS='0' and date_format(pr.PAY_DATE,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+        <trim prefix="and" prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" separator=" and ">
+                <if test="null != item">
+                    ${key}=#{item}
+                </if>
+            </foreach>
+        </trim>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="(" close=")" separator=" or ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <!--u.BIZER_ID=#{page.params.WORK_ID} and -->
     </select>
 
     <resultMap id="dywhMap" type="java.util.LinkedHashMap">
         <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
-        <id property="id" column="id"></id>
+            <id property="id" column="id"></id>
         </association>
         <association property="company" javaType="java.util.LinkedHashMap" columnPrefix="c_" autoMapping="true">
             <id property="id" column="id"/>
@@ -122,14 +194,31 @@ WHERE u.BIZER_ID=#{page.params.WORK_ID} and pr.STATUS='0' and date_format(pr.PAY
     </resultMap>
 
     <select id="queryXZUserPageMul" parameterType="map" resultMap="xzMap">
-      SELECT u.*,c.* FROM fq.USER u
-      LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
-      WHERE u.BIZER_ID=#{page.params.WORK_ID} order by u.CTIME desc
+        SELECT u.*,c.* FROM fq.USER u
+        LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        <trim prefix="where " prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" separator=" and ">
+                <if test="null != item">
+                    ${key}=#{item}
+                </if>
+            </foreach>
+        </trim>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="(" close=")" separator=" or ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        order by u.CTIME desc
+        <!--u.BIZER_ID=#{page.params.WORK_ID}-->
     </select>
 
     <resultMap id="xzMap" type="map">
         <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
-        <id property="id" column="id"></id>
+            <id property="id" column="id"></id>
         </association>
         <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
             <id property="id" column="id"/>
@@ -144,11 +233,82 @@ WHERE u.BIZER_ID=#{page.params.WORK_ID} and pr.STATUS='0' and date_format(pr.PAY
 
     <resultMap id="dshMap" type="map">
         <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
-        <id property="id" column="id"></id>
+            <id property="id" column="id"></id>
         </association>
         <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
             <id property="id" column="id"/>
         </association>
     </resultMap>
 
+    <select id="queryBillMul" parameterType="map" resultMap="billMap">
+        select o.*,pr.*,d.* FROM fq.ORDER o
+  JOIN fq.PLAN_REPAYMENT pr ON o.ID=pr.ORDER_ID
+  JOIN fq.DELIVERY d ON o.CONTACT=d.ID
+WHERE o.USER_ID=#{userId}
+      AND o.STATE NOT IN ('0','6','8','9','10') order by o.CTIME
+    </select>
+<resultMap id="billMap" type="java.util.LinkedHashMap" extends="orderMap">
+    <association property="delivery" javaType="map" columnPrefix="d_" autoMapping="true">
+        <id property="id" column="id"/>
+    </association>
+    <collection property="repayments" ofType="map" javaType="ArrayList" columnPrefix="pr_" autoMapping="true">
+        <id property="id" column="id"/>
+    </collection>
+</resultMap>
+    <resultMap id="orderMap" type="map">
+        <id property="id" column="o_id"/>
+        <result property="userId" column="o_userId"/>
+        <result property="productId" column="o_productId"/>
+        <result property="productName" column="o_productName"/>
+        <result property="orderNo" column="o_orderNo"/>
+        <result property="payNo" column="o_payNo"/>
+        <result property="orderMoney" column="o_orderMoney"/>
+        <result property="money" column="o_money"/>
+        <result property="payMoney" column="o_payMoney"/>
+        <result property="attr" column="o_attr"/>
+        <result property="period" column="o_period"/>
+        <result property="payTime" column="o_payTime"/>
+        <result property="discount" column="o_discount"/>
+        <result property="scoreMoney" column="o_scoreMoney"/>
+        <result property="bill" column="o_bill"/>
+        <result property="monthly" column="o_monthly"/>
+        <result property="state" column="o_state"/>
+        <result property="ctime" column="o_ctime"/>
+        <result property="remark" column="o_remark"/>
+    </resultMap>
+    <select id="queryPerformanceMul" parameterType="map" resultMap="perform">
+select o.*,u.*,c.* FROM fq.ORDER o
+JOIN fq.USER u ON o.USER_ID=u.ID
+LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+WHERE u.BIZER_ID=#{workId}  AND o.STATE IN ('0','1')
+<choose>
+    <when test="type == 1">
+        and DATE_FORMAT(o.CTIME,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+    </when>
+    <when test="type ==2 ">
+        AND DATE_FORMAT(o.CTIME,'%Y-%m')=DATE_FORMAT(DATE_SUB(curdate(),INTERVAL 1 MONTH),'%Y-%m')
+    </when>
+    <otherwise>
+    and DATE_FORMAT(o.CTIME,'%Y-%m-%d')=CURDATE()
+    </otherwise>
+</choose>
+    </select>
+    <resultMap id="perform" type="java.util.LinkedHashMap" extends="orderMap">
+        <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+    </resultMap>
+
+    <select id="repayMind" parameterType="map" resultType="map">
+SELECT * FROM fq.PLAN_REPAYMENT pr
+WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
+    </select>
+    <select id="couponMindMul" parameterType="map" resultType="map">
+    SELECT c.*,cd.* FROM fq.COUPON c
+    JOIN fq.COUPON_DICT cd ON c.COUPON_ID=cd.ID
+    WHERE c.STATUS='2' AND DATEDIFF(cd.EXPIRE_DATE,CURDATE())=#{interval}
+    </select>
 </mapper>

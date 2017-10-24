@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 public class PageInterceptor implements Interceptor {
     private Logger logger = LogManager.getLogger(PageInterceptor.class);
     private Pattern tablePattern = Pattern.compile("(?<=\\.)(\\w+)", Pattern.CASE_INSENSITIVE);
-    private Pattern tablePattern2 = Pattern.compile("(?<=\\.)(\\w+)(\\s+([a-z]+)(?=,)?)?", Pattern.CASE_INSENSITIVE);
+    private Pattern tablePattern2 = Pattern.compile("(?<=\\.)(\\w+)(\\s+([a-zA-Z]+)(?=,)?)?", Pattern.CASE_INSENSITIVE);
     private Pattern tPattern = Pattern.compile("(\\w+\\.)?\\*", Pattern.CASE_INSENSITIVE);
     /*    @Autowired
     private RedisCacheManager cacheManager;    //TODO:读取系统配置*/

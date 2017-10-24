@@ -11,22 +11,22 @@ import cn.jpush.api.push.model.audience.Audience;
 import cn.jpush.api.push.model.notification.AndroidNotification;
 import cn.jpush.api.push.model.notification.IosNotification;
 import cn.jpush.api.push.model.notification.Notification;
+import com.google.gson.JsonObject;
 
 public class JPushUtil {
 	
-	public static final String APP_KEY="a0e812e6a3258cee1fa0e62d";
+	public static final String APP_KEY="6ed38b1c85a58a2ca6d1d04d";
 	
-	public static final String MASTER_SECRET="6ac3b5943624e0973f12a231";
+	public static final String MASTER_SECRET="7389c3053a29057a869669de";
 	
 	/**
-	 * 推送消息
-	 * @param payload
+	 * 推送消息	//payload
 	 */
-	public static void push(String alias,String title,String content){
+	public static void push(String title,String content,JsonObject extra,String... alias){
 		JPushClient jpushClient = new JPushClient(MASTER_SECRET, APP_KEY, null, ClientConfig.getInstance());
 
 	    try {
-	        PushResult result = jpushClient.sendPush(buildPushObject_all_alias_alert(title, content, alias));
+	        PushResult result = jpushClient.sendPush(buildPushObject_all_alias_alert(title, content, extra,alias));
 	        System.out.println("result: "+result);
 	    } catch (APIConnectionException e) {
 	        // Connection error, should retry later
@@ -56,21 +56,21 @@ public class JPushUtil {
 	 * @param alias
 	 * @return
 	 */
-	public static PushPayload buildPushObject_all_alias_alert(String title,String content,String alias) {
+	public static PushPayload buildPushObject_all_alias_alert(String title, String content,JsonObject extra,String... alias) {
         return PushPayload.newBuilder()
                 .setPlatform(Platform.all())
                 .setAudience(Audience.alias(alias))
                 .setNotification(Notification.newBuilder()
                         .setAlert(content)
                         .addPlatformNotification(AndroidNotification.newBuilder()
-                                .setTitle(title).build())
+                                .setTitle(title).addExtra("data",extra).build())
                         .addPlatformNotification(IosNotification.newBuilder()
-                                .incrBadge(1).build())
+                                .incrBadge(1).addExtra("data",extra).build())
                         .build())
                 .build();
     }
 	
 	public static void main(String[] args) {
-		JPushUtil.push("7b92cbc20c72423c9fd015406ae55209","测试标题","测试内容");
+		JPushUtil.push("测试标题","测试内容",null,"7b92cbc20c72423c9fd015406ae55209");
 	}
 }
