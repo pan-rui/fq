@@ -42,6 +42,12 @@ public class Table {
 	//
 	public static final String EMPLOYEE="EMPLOYEE";
 	//
+	public static final String FEEDBACK="FEEDBACK";
+	//
+	public static final String HELP="HELP";
+	//
+	public static final String HELP_TYPE="HELP_TYPE";
+	//
 	public static final String MERCHANT="MERCHANT";
 	//
 	public static final String ORDER="ORDER";
@@ -308,6 +314,35 @@ public class Table {
 		STATE,	//0:停用,1:正常,2：离职
 	}
 
+	public enum Feedback{
+		ID,	//ID
+		ASK,	//问题
+		USER_ID,	//用户ID
+		USER_PHONE,	//用户电话
+		STATUS,	//状态:0:未解决,1:已解决
+		CTIME,	//
+	}
+
+	public enum Help{
+		ID,	//ID
+		NAME,	//问题
+		ANSWER,	//答案
+		TYPE_ID,	//帮助类型ID
+		SEQ,	//排序
+		URL,	//文件路径
+		CTIME,	//创建时间
+	}
+
+	public enum HelpType{
+		ID,	//ID
+		NAME,	//类型名称
+		PARENT_ID,	//
+		SEQ,	//顺序
+		DESCRIPTION,	//描述
+		APP_TYPE,	//适用于App:1,用户,2,销售
+		CTIME,	//创建时间
+	}
+
 	public enum Merchant{
 		ID,	//主键
 		MERCHANT_NAME,	//商户名称
@@ -343,6 +378,7 @@ public class Table {
 		ATTR,	//商品规格属性
 		MONEY,	//消费金额
 		PERIOD,	//分期详情
+		ITEMS,	//[{id,storeId,name,price,size}....]
 		DISCOUNT,	//会员折扣
 		PREFERENTIAL,	//优惠金额
 		FREIGHT,	//运费
@@ -572,11 +608,11 @@ public class Table {
 		ID,	//用户ID
 		NAME,	//客户名称
 		USER_NAME,	//用户名
-		NICKNAME,	//昵称
+		NICKNAME,	//
 		SEX,	//客户性别:1男,0女
 		TYPE,	//客户类型
 		CARD_NO,	//身份证号码
-		BIZER_ID,	//业务员ID
+		BIZER_ID,	//销售员ID
 		CTIME,	//创建时间
 		UP_ID,	//更新人
 		UTIME,	//更新时间

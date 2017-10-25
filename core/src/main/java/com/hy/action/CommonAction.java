@@ -2,6 +2,7 @@ package com.hy.action;
 
 import com.alibaba.fastjson.JSONArray;
 import com.aliyuncs.dysmsapi.model.v20170525.SendSmsResponse;
+import com.google.gson.JsonObject;
 import com.hy.annotation.EncryptProcess;
 import com.hy.base.BaseResult;
 import com.hy.base.ReturnCode;
@@ -18,8 +19,8 @@ import com.hy.service.UserService;
 import com.hy.util.AliUtil;
 import com.hy.util.ImageCode;
 import com.hy.util.ImgUtil;
+import com.hy.util.JPushUtil;
 import com.hy.vo.ParamsVo;
-import com.sun.org.apache.xpath.internal.operations.Mult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.MultiValueMap;
@@ -30,25 +31,20 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.commons.CommonsMultipartFile;
 import org.springframework.web.multipart.support.DefaultMultipartHttpServletRequest;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 @RestController
@@ -146,7 +142,12 @@ public class CommonAction extends BaseAction {
     public BaseResult certStep4(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone) {
         int count = baseDao.updateByProsInTab(userTable, ParamsMap.newMap(Table.User.CERT_STATUS.name(), "3").addParams(Table.User.UP_ID.name(), userId).addParams(Table.User.UTIME.name(), new Date()).addParams(Table.ID, userId));
         Constants.setCacheOnExpire(CacheKey.U_CERT_STATUS_Prefix + phone, "3", UserService.certStatusExpire);
-        //TODO:通知审核人员
+        //TODO:通知审核人员,审核成功后推送给用户
+        String certUserId = Constants.getSystemStringValue("CERT_USER_ID");
+        String appMeta = Constants.hgetCache(CacheKey.APP_META_Prefix, JPushUtil.SALE_APP + certUserId);
+        JsonObject jsonObject=new JsonObject();
+        jsonObject.addProperty("userId", userId);
+        JPushUtil.pushByRegId(JPushUtil.SALE_APP,"有一项用户分期资质审核任务待完成","用户号码:"+phone,jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]);      //TODO:AppMeta
         return new BaseResult(ReturnCode.OK);
     }
 
@@ -244,17 +245,51 @@ public class CommonAction extends BaseAction {
         return new BaseResult(0, resultList);
     }
 
+    /**
+     *
+     * @param uId
+     * @param repayId       还款计划ID
+     * @param periodNum     总期数
+     * @return
+     */
     @PostMapping("repay/{repayId:[0-9]+}")
-    public BaseResult repay(@RequestHeader(Constants.USER_ID) String uId, @PathVariable Long repayId,@RequestParam Long periodNum) {
+    public BaseResult repay(@RequestHeader(Constants.USER_ID) String uId, @PathVariable Long repayId,@RequestParam(required = true) Long periodNum) {
         Map<String, Object> repayMap = baseDao.queryByIdInTab(Table.FQ + Table.PLAN_REPAYMENT, repayId);
         BaseResult baseResult = orderService.repay(repayMap);       //支付接口
         if (baseResult.getCode() == 0) {
             long diffSecond=System.currentTimeMillis()-((Date)repayMap.get("planrepayDate")).getTime();
             baseDao.updateByProsInTab(Table.FQ + Table.PLAN_REPAYMENT, ParamsMap.newMap(Table.PlanRepayment.STATUS.name(), diffSecond > 0 ? "1" : "2").addParams(Table.PlanRepayment.PAY_DATE,new Date()).addParams(Table.ID, repayId));
-            if(periodNum==repayMap.get("repayNum"))
-                baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "10").addParams(Table.ID, repayMap.get("orderId")));           //更新订单状态
+            String appMeta=Constants.hgetCache(CacheKey.APP_META_Prefix,JPushUtil.USER_APP+uId);
+            if(periodNum==repayMap.get("repayNum")) {
+                Long orderId= (Long) repayMap.get("orderId");
+                baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "10").addParams(Table.ID,orderId ));           //更新订单状态
+                JsonObject jsonObject=new JsonObject();
+                jsonObject.addProperty("orderId",orderId);
+                JPushUtil.pushByRegId(JPushUtil.USER_APP,"您有一笔融宝分期订单已全部还款完成.","点击查看详情!",jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]);
+            }
+            Calendar calendar=Calendar.getInstance();
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("repayId",repayId);
+            JPushUtil.pushByRegId(JPushUtil.USER_APP,"您"+calendar.get(Calendar.MONTH)+"月账单"+repayMap.get("planrepayMoney")+"元已还清!","点击查看详情:",jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]);   //TODO:AppMeta
         }
         return baseResult;
+    }
+
+    @PostMapping("help")
+    public BaseResult help(@RequestHeader(Constants.APP_VER)String appVer,@RequestHeader(Constants.USER_ID) String uId,@EncryptProcess Page page) {
+        if(appVer.startsWith(Constants.USER))
+            page.getParams().put("ht_APP_TYPE", "1");
+        else if (appVer.startsWith(Constants.SALE)) {
+            page.getParams().put("ht_APP_TYPE", "2");
+        }
+        commonDao.queryHelpPageMul(page);
+        return new BaseResult(ReturnCode.OK,page);
+    }
+
+    @PostMapping("feedback")
+    public BaseResult feedback(@RequestHeader(Constants.USER_ID) Long uId, @RequestHeader(Constants.USER_PHONE) String phone, @RequestParam(required = true) String ask) {
+        baseDao.insertByProsInTab(Table.FQ + Table.FEEDBACK, ParamsMap.newMap(Table.Feedback.ASK.name(), ask).addParams(Table.Feedback.USER_ID.name(), uId).addParams(Table.Feedback.USER_PHONE.name(), phone).addParams(Table.Feedback.STATUS.name(), "0"));
+        return new BaseResult(ReturnCode.OK);
     }
 
 }

@@ -11,6 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -198,6 +199,18 @@ public class Constants {
         jedis.setex(key,expire, val);
         jedis.close();
     }
+
+    public static void hsetCache(String key,String field, String val) {
+        Jedis jedis = jedisPool.getResource();
+        jedis.hset(key,field,val);
+        jedis.close();
+    }
+    public static void hsetCache(byte[] key, byte[] field,byte[] val) {
+        Jedis jedis = jedisPool.getResource();
+        jedis.hset(key,field,val);
+        jedis.close();
+    }
+
     public static String getCache(String key) {
         Jedis jedis=jedisPool.getResource();
         String val = jedis.get(key);
@@ -211,7 +224,18 @@ public class Constants {
         jedis.close();
         return val;
     }
-
+    public static String hgetCache(String key,String field) {
+        Jedis jedis = jedisPool.getResource();
+       String val= jedis.hget(key,field);
+        jedis.close();
+        return val;
+    }
+    public static byte[] hgetCache(byte[] key,byte[] field) {
+        Jedis jedis = jedisPool.getResource();
+        byte[] val= jedis.hget(key,field);
+        jedis.close();
+        return val;
+    }
     public static void delCache(String key) {
         Jedis jedis=jedisPool.getResource();
         jedis.del(key);
@@ -298,6 +322,5 @@ public class Constants {
                 }
             }
         }
-
     }
 }

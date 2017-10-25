@@ -57,7 +57,7 @@ public class UserAction extends BaseAction {
         int result = userService.addUser(map.addParams(Table.User.TYPE.name(), "User"));
         if (result > 0) {
             Constants.setCache(CacheKey.U_SN_Prefix + phone, (String) map.get(Table.User.CLIENT_SN.name()));        //TODO:更新用户表CLIENT_SN字段时缓存起来
-            return new BaseResult(ReturnCode.OK);
+            return new BaseResult(ReturnCode.OK,map);
         } else return new BaseResult(ReturnCode.FAIL);
     }
 
@@ -80,6 +80,7 @@ public class UserAction extends BaseAction {
     public Object login(@RequestBody ParamsVo paramsVo) {
         String phone = (String) paramsVo.getParams().get("phone");
         String clientSn = (String) paramsVo.getParams().get("clientSn");
+        String appMeta = (String) paramsVo.getParams().get("appMeta");
 /*        if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(clientSn))
             return new BaseResult(ReturnCode.REQUEST_PARAMS_VERIFY_ERROR);
         List<Map<String, Object>> users = baseDao.queryByProsInTab(tableName, ParamsMap.newMap(Table.User.PHONE.name(), phone).addParams(Table.User.CLIENT_SN.name(), clientSn).addParams(Table.User.IS_ENABLE.name(), 1));*/
@@ -98,6 +99,7 @@ public class UserAction extends BaseAction {
             Constants.setCacheValue("tmp", CacheKey.U_ + phone, SerializeUtil.serialize(user));     //缓存登录信息
             String token = ImageCode.getPartSymbol(32);
             Constants.setCacheOnExpire(CacheKey.U_TOKEN_Prefix + phone, token, sessionExpire);
+            Constants.hsetCache(CacheKey.APP_META_Prefix,"U_"+user.get("id"),appMeta);
             return new BaseResult(0, ParamsMap.newMap("token", token).addParams("userInfo", user));
         } else return new BaseResult(ReturnCode.LOGIN_PWD_ERROR);
     }

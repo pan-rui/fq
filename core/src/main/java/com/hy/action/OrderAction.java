@@ -1,25 +1,27 @@
 package com.hy.action;
 
 import com.alibaba.fastjson.JSON;
+import com.google.gson.JsonObject;
 import com.hy.annotation.EncryptProcess;
 import com.hy.base.BaseResult;
 import com.hy.base.ReturnCode;
+import com.hy.core.CacheKey;
 import com.hy.core.ColumnProcess;
 import com.hy.core.Constants;
 import com.hy.core.Page;
 import com.hy.core.ParamsMap;
 import com.hy.core.Table;
 import com.hy.dao.BaseDao;
+import com.hy.dao.ProductDao;
 import com.hy.service.OrderService;
-import com.hy.task.OrderPayRemind;
-import com.hy.util.ImageCode;
+import com.hy.task.OrderPayJob;
+import com.hy.util.JPushUtil;
 import com.hy.util.TriggerUtil;
 import com.hy.vo.ParamsVo;
 import org.apache.commons.lang.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.shiro.util.Assert;
-import org.aspectj.apache.bcel.generic.RET;
 import org.quartz.JobDataMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
@@ -33,7 +35,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -45,6 +46,8 @@ import java.util.Map;
 public class OrderAction extends BaseAction {
     @Autowired
     private BaseDao baseDao;
+    @Autowired
+    private ProductDao productDao;
     @Autowired
     private OrderService orderService;
     private static final Logger logger = LogManager.getLogger(OrderAction.class);
@@ -67,6 +70,7 @@ public class OrderAction extends BaseAction {
         Map<String,Object> period= (Map<String, Object>) order.get(Table.Order.PERIOD.name());
         order.addParams(Table.Order.PERIOD.name(), JSON.toJSONString(period));
         order.addParams(Table.Order.UP_ID.name(), userId);
+//        order.addParams(Table.Order.ITEMS.name(),JSON.toJSONString(ParamsMap.newMap("id",)))
         BigDecimal orderMoney = new BigDecimal((String) order.get(Table.Order.MONEY.name()));
         Double DISCOUNT = (Double) order.get(Table.Order.DISCOUNT.name());      //折扣
         if (DISCOUNT!=null && DISCOUNT > 0) {
@@ -93,7 +97,7 @@ public class OrderAction extends BaseAction {
         if(count>0){            //付款通知
             String delay=Constants.getSystemStringValue(orderPayRemind);
             Date date=new Date(System.currentTimeMillis()+ (StringUtils.isEmpty(delay)?7200000L:Integer.parseInt(delay)));
-            TriggerUtil.simpleTask(new JobDataMap(ParamsMap.newMap("dao",baseDao).addParams("orderId",order.get("id")).addParams("userId",uId)), OrderPayRemind.class,date);
+            TriggerUtil.simpleTask(new JobDataMap(ParamsMap.newMap("dao",baseDao).addParams("orderId",order.get("id")).addParams("userId",uId)), OrderPayJob.class,date);
         }
         return count>0?new BaseResult(ReturnCode.OK, ColumnProcess.encryMap(order)):new BaseResult(ReturnCode.FAIL);
     }
@@ -110,13 +114,13 @@ public class OrderAction extends BaseAction {
     }
 
     @PostMapping("pay")
-    public BaseResult payOrder(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess ParamsVo paramsVo) {
+    public BaseResult payOrder(@RequestHeader(Constants.USER_ID) String uId, @RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess ParamsVo paramsVo) {
             Map<String,Object> orderMap=baseDao.queryByIdInTab(Table.FQ+Table.ORDER,paramsVo.getId());
         Assert.notNull(orderMap,"无此订单。");
         BaseResult baseResult=orderService.pay(orderMap);
         if (baseResult.getCode() == 0) {
             Map<String, Object> periodMap = JSON.parseObject((String) orderMap.get("period")) ;
-            Long uId = (Long) orderMap.get("userId");
+            Long userId = (Long) orderMap.get("userId");
             int period= (int) periodMap.get("PERIOD");
             Calendar calendar=Calendar.getInstance();
             List<Map<String, Object>> srcList = new ArrayList<>();
@@ -131,15 +135,56 @@ public class OrderAction extends BaseAction {
                         .addParams(Table.PlanRepayment.PLANREPAY_MONEY.name(), orderMap.get("monthly"))
                         .addParams(Table.PlanRepayment.REPAY_NUM.name(), i)
                         .addParams(Table.PlanRepayment.STATUS.name(), "0")      //0未还
-                        .addParams(Table.PlanRepayment.UP_ID.name(), userId);
+                        .addParams(Table.PlanRepayment.UP_ID.name(), uId);
                 srcList.add(planRepayMap);
             }
             int count=baseDao.insertBatchByProsInTab(Table.FQ + Table.PLAN_REPAYMENT, srcList);
             if(count<period)
                     logger.error("ERROR:还款计划生成有误。。。。");
+            String items = (String) orderMap.get("items");
+            try {
+                List<Map> itemList =JSON.parseArray(items,Map.class);
+                for (Map itMap : itemList) {
+                    //TODO:销量
+                    Long productId = (Long) itMap.get("id");
+                    Long storeId = (Long) itMap.get("storeId");
+                    Map<String, Object> productMap = baseDao.queryByIdInTab(Table.FQ + Table.PRODUCT, productId);
+                    String attJson = JSON.toJSONString(mergeData(JSON.parseArray((String) productMap.get("attJson"), Map.class), itMap, "attr", "attGroup"));
+                    productDao.incrSales((int) itMap.get("size"), attJson, productId, storeId);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error("支付销量更新异常:"+items, e);
+            }
+            String appMeta=Constants.hgetCache(CacheKey.APP_META_Prefix,JPushUtil.USER_APP+userId);
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("orderId", (Long) paramsVo.getId());
+            JPushUtil.pushByRegId(JPushUtil.USER_APP,"您刚才支付了一笔订单,金额为:"+orderMap.get("payMoney"),"如有疑问请联系客服.点击查看详情:",jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]);        //TODO:AppMeta
             return baseResult;
         }else
         return baseResult;
+    }
+
+    public static List<Map> mergeData(final List<Map> dataList,Map<String,Object> dataMap,String diffMapField,String diffListField){
+        Map<String,Object> attG= (Map<String, Object>) dataMap.get(diffMapField);
+        a:for (Map<String, Object> map : dataList) {
+            Map<String, Object> att = (Map<String, Object>) map.get(diffListField);
+            int i=0;
+            if (attG.size() == att.size()) {
+                b:for (String key : att.keySet()) {
+                    if(!attG.containsKey(key)||!attG.get(key).equals(att.get(key))){
+                        break b;
+                    }
+                    i++;
+                }
+            }
+            if(i==att.size()){
+                int size=Integer.parseInt(String.valueOf(dataMap.get("size")));
+                map.put("sole", (int)map.get("sold") +size );
+                map.put("stock", (int) map.get("stock") - size);
+            }
+        }
+        return dataList;
     }
 
 }

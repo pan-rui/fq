@@ -228,7 +228,24 @@
     <select id="queryDSHUserPageMul" parameterType="map" resultMap="dshMap">
         SELECT u.*,c.* FROM fq.USER u
         LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
-        WHERE u.BIZER_ID=#{page.params.WORK_ID} and u.CERT_STATUS= '3' order by u.CTIME desc
+        WHERE u.CERT_STATUS= '3'
+        <trim prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" open=" and " separator=" and ">
+                <if test="null != item">
+                    ${key}=#{item}
+                </if>
+            </foreach>
+        </trim>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="(" close=")" separator=" or ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+          order by u.CTIME desc
     </select>
 
     <resultMap id="dshMap" type="map">
@@ -306,9 +323,51 @@ WHERE u.BIZER_ID=#{workId}  AND o.STATE IN ('0','1')
 SELECT * FROM fq.PLAN_REPAYMENT pr
 WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
     </select>
-    <select id="couponMindMul" parameterType="map" resultType="map">
+    <select id="queryCouponMindMul" parameterType="map" resultType="map">
     SELECT c.*,cd.* FROM fq.COUPON c
     JOIN fq.COUPON_DICT cd ON c.COUPON_ID=cd.ID
     WHERE c.STATUS='2' AND DATEDIFF(cd.EXPIRE_DATE,CURDATE())=#{interval}
     </select>
+
+    <select id="queryCouponPageMul" parameterType="map" resultType="map">
+        SELECT c.*,cd.* FROM fq.COUPON c
+        JOIN fq.COUPON_DICT cd ON c.COUPON_ID=cd.ID
+        <trim prefix="where " prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" separator=" and ">
+                <if test="null != item">
+                    ${key}=#{item}
+                </if>
+            </foreach>
+        </trim>
+    </select>
+<resultMap id="couponMap" type="map">
+    <association property="coupon" javaType="map" columnPrefix="c_" autoMapping="true">
+        <id property="id" column="id"/>
+    </association>
+    <association property="couponDict" javaType="map" columnPrefix="cd_" autoMapping="true">
+        <id property="id" column="id"/>
+    </association>
+</resultMap>
+    <select id="queryHelpPageMul" parameterType="map" resultMap="helpContent">
+        SELECT h.*,ht.* FROM fq.HELP h
+        JOIN fq.HELP_TYPE ht ON h.TYPE_ID = ht.ID
+        <trim prefix="where " prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" separator=" and ">
+                    ${key}=#{item}
+            </foreach>
+        </trim>
+        order by ht.SEQ,h.SEQ
+    </select>
+
+    <resultMap id="helpContent" type="java.util.LinkedHashMap">
+        <id property="id" column="ht_id"/>
+        <result property="name" column="ht_name"/>
+        <result property="parentId" column="ht_parentId"/>
+        <result property="seq" column="ht_seq"/>
+        <result property="description" column="ht_description"/>
+        <collection property="help" ofType="map" javaType="ArrayList" columnPrefix="h_" autoMapping="true">
+            <id property="id" column="id"/>
+        </collection>
+    </resultMap>
+
 </mapper>

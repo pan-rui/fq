@@ -18,6 +18,7 @@ http://www.springframework.org/schema/task/spring-task-3.1.xsd">
     <task:annotation-driven executor="executor" scheduler="scheduler" />
     <task:scheduled-tasks>
         <task:scheduled ref="rePayRemind" method="repayMind" cron="0 0 10 * * *"/>
+        <task:scheduled ref="couponExpireRemind" method="useMind" cron="0 30 10 * * *"/>
     </task:scheduled-tasks>
 
     <!--<cache:annotation-driven proxy-target-class="true" cache-manager="cacheManager"/>-->

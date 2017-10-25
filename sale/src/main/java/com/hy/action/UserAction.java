@@ -51,6 +51,7 @@ public class UserAction extends BaseAction {
     public Object login(@RequestBody ParamsVo paramsVo) {
         String phone = (String) paramsVo.getParams().get("phone");
         String clientSn = (String) paramsVo.getParams().get("clientSn");
+        String appMeta = (String) paramsVo.getParams().get("appMeta");
         if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(clientSn))
             return new BaseResult(ReturnCode.REQUEST_PARAMS_VERIFY_ERROR);
         String uClientSn = Constants.getCache(CacheKey.U_SN_Prefix + phone);
@@ -75,6 +76,7 @@ public class UserAction extends BaseAction {
             }
             String token = ImageCode.getPartSymbol(32);
             Constants.setCacheOnExpire(CacheKey.U_TOKEN_Prefix + phone, token, sessionExpire);
+            Constants.hsetCache(CacheKey.APP_META_Prefix,"S_"+user.get("id"),appMeta);
             return new BaseResult(0, ParamsMap.newMap("token", token).addParams("userInfo", user));
         } else return new BaseResult(ReturnCode.LOGIN_PWD_ERROR);
     }

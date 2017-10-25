@@ -66,7 +66,7 @@ public class BaseAction implements IBase, ServletContextAware {
 	@ExceptionHandler
 	@ResponseBody
 	public BaseResult exp(HttpServletRequest request, HttpServletResponse response, Exception ex) {
-//		ex.printStackTrace();
+		ex.printStackTrace();
 		if (ex instanceof HttpMessageNotReadableException) {
 			logger.error(ex.getMessage());
 			return new BaseResult(ReturnCode.FAIL);

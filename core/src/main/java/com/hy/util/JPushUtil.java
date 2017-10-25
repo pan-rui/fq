@@ -8,39 +8,75 @@ import cn.jpush.api.push.PushResult;
 import cn.jpush.api.push.model.Platform;
 import cn.jpush.api.push.model.PushPayload;
 import cn.jpush.api.push.model.audience.Audience;
+import cn.jpush.api.push.model.audience.AudienceTarget;
+import cn.jpush.api.push.model.audience.AudienceType;
 import cn.jpush.api.push.model.notification.AndroidNotification;
 import cn.jpush.api.push.model.notification.IosNotification;
 import cn.jpush.api.push.model.notification.Notification;
 import com.google.gson.JsonObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class JPushUtil {
-	
+	private static final Logger logger = LogManager.getLogger(JPushUtil.class);
+	public static final String USER_APP = "U_";
+	public static final String SALE_APP = "S_";
 	public static final String APP_KEY="6ed38b1c85a58a2ca6d1d04d";
-	
+	public static final String SALE_APP_KEY="752a1c126636e9a39bbaff5c";
+	public static final String SALE_MASTER_SECRET="f49855441042b976219688f6";
 	public static final String MASTER_SECRET="7389c3053a29057a869669de";
-	
+
+
 	/**
 	 * 推送消息	//payload
 	 */
-	public static void push(String title,String content,JsonObject extra,String... alias){
-		JPushClient jpushClient = new JPushClient(MASTER_SECRET, APP_KEY, null, ClientConfig.getInstance());
-
+	public static void pushByAlias(String appType,String title,String content,JsonObject extra,String... alias){
 	    try {
-	        PushResult result = jpushClient.sendPush(buildPushObject_all_alias_alert(title, content, extra,alias));
+	        PushResult result = getPushClient(appType).sendPush(buildPushObject_all_alias_alert(title, content, extra,null,null, Arrays.asList(alias)));
 	        System.out.println("result: "+result);
-	    } catch (APIConnectionException e) {
+	    } catch (APIConnectionException|APIRequestException e) {
 	        // Connection error, should retry later
-	    	System.out.println("Connection error, should retry later: "+e);
-
-	    } catch (APIRequestException e) {
-	        // Should review the error, and fix the request
-	    	System.out.println("Should review the error, and fix the request "+e);
-	    	System.out.println("HTTP Status: " + e.getStatus());
-	    	System.out.println("Error Code: " + e.getErrorCode());
-	    	System.out.println("Error Message: " + e.getErrorMessage());
+			e.printStackTrace();
+	    	logger.error("Connection error, should retry later: ",e);
 	    }
 	}
-	
+
+	public static void pushByRegId(String appType,String title,String content,JsonObject extra,String regId){
+		try {
+			PushResult result = getPushClient(appType).sendPush(buildPushObject_all_alias_alert(title, content, extra,regId,null, null));
+			System.out.println("result: "+result);
+		} catch (APIConnectionException|APIRequestException e) {
+			e.printStackTrace();
+			logger.error("Connection error, should retry later: ",e);
+		}
+	}
+
+	public static void pushByTags(String appType,String title,String content,JsonObject extra,String... tags){
+		try {
+			PushResult result = getPushClient(appType).sendPush(buildPushObject_all_alias_alert(title, content, extra,null,Arrays.asList(tags), null));
+			System.out.println("result: "+result);
+		} catch (APIConnectionException|APIRequestException e) {
+			e.printStackTrace();
+			logger.error("Connection error, should retry later: ",e);
+		}
+	}
+
+	public static void multiPush(String appType,String title,String content,JsonObject extra,List<String> alias,String... tags){
+		try {
+			PushResult result = getPushClient(appType).sendPush(buildPushObject_all_alias_alert(title, content, extra,null,Arrays.asList(tags), alias));
+			System.out.println("result: "+result);
+		} catch (APIConnectionException|APIRequestException e) {
+			e.printStackTrace();
+			logger.error("Connection error, should retry later: ",e);
+		}
+	}
+
 	/**
 	 * 所有人通知
 	 * @param content
@@ -56,10 +92,17 @@ public class JPushUtil {
 	 * @param alias
 	 * @return
 	 */
-	public static PushPayload buildPushObject_all_alias_alert(String title, String content,JsonObject extra,String... alias) {
-        return PushPayload.newBuilder()
+	public static PushPayload buildPushObject_all_alias_alert(String title, String content, JsonObject extra, String registerId, List<String> tag, List<String> alias) {
+		Audience.Builder builder = Audience.newBuilder();
+		if(!StringUtils.isEmpty(registerId))
+			builder.addAudienceTarget(AudienceTarget.registrationId(registerId));
+		if(!CollectionUtils.isEmpty(tag))
+			builder.addAudienceTarget(AudienceTarget.tag(tag));
+		if(!CollectionUtils.isEmpty(alias))
+			builder.addAudienceTarget(AudienceTarget.alias(alias));
+		return PushPayload.newBuilder()
                 .setPlatform(Platform.all())
-                .setAudience(Audience.alias(alias))
+                .setAudience(builder.build())
                 .setNotification(Notification.newBuilder()
                         .setAlert(content)
                         .addPlatformNotification(AndroidNotification.newBuilder()
@@ -69,8 +112,17 @@ public class JPushUtil {
                         .build())
                 .build();
     }
+
+	public static JPushClient getPushClient(String appType) {
+		if (USER_APP.equals(appType)) {
+			return new JPushClient(MASTER_SECRET, APP_KEY, null, ClientConfig.getInstance());
+		} else if (SALE_APP.equals(appType)) {
+			return new JPushClient(SALE_MASTER_SECRET, SALE_APP_KEY, null, ClientConfig.getInstance());
+		}
+		return new JPushClient(MASTER_SECRET, APP_KEY, null, ClientConfig.getInstance());
+	}
 	
 	public static void main(String[] args) {
-		JPushUtil.push("测试标题","测试内容",null,"7b92cbc20c72423c9fd015406ae55209");
+		JPushUtil.pushByRegId(JPushUtil.USER_APP,"测试标题","测试内容",null,"13065ffa4e0c846eb3c");
 	}
 }

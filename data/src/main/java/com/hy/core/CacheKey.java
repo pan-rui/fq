@@ -27,4 +27,6 @@ public class CacheKey {
 
     public static final String U_BANK_Prefix = "U_BANK_";
 
+    public static final String APP_META_Prefix="APP_META_";
+
 }

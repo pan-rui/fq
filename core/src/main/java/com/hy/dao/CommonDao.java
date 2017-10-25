@@ -69,13 +69,24 @@ public class CommonDao {
         return resultList;
     }
 
+    /**
+     * 我的账单,还款列表
+     * @param userId
+     * @return
+     */
     @Cacheable(key = "'repayList_'+#userId",condition = "#result != null")
     public List<Map<String, Object>> queryBillMul(Long userId) {
         List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryBillMul", ParamsMap.newMap("userId", userId));
         return resultList;
     }
 
-    @Cacheable(key = "'performanceList$'+#type+'_'+#workId",condition = "#result != null")
+    /**
+     * 我的业绩
+     * @param workId
+     * @param type
+     * @return
+     */
+    @Cacheable(key = "'performanceList$'+#workId+'_'+#type",condition = "#result != null")
     public List<Map<String, Object>> queryPerformanceMul(String workId,int type) {
         List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryPerformanceMul", ParamsMap.newMap("workId", workId).addParams("type",type));
         return resultList;
@@ -86,8 +97,15 @@ public class CommonDao {
         return resultList;
     }
 
-    public List<Map<String, Object>> couponMind(int interval) {
-        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".couponMind", ParamsMap.newMap("interval", interval));
+    public List<Map<String, Object>> queryCouponMindMul(int interval) {
+        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryCouponMindMul", ParamsMap.newMap("interval", interval));
         return resultList;
     }
+
+    public List<Map<String, Object>> queryHelpPageMul(final Page page) {
+        List<Map<String,Object>> resultList=sqlSessionTemplate.selectList(className + ".queryHelpPageMul", ParamsMap.newMap("page", page));
+        page.setResults(resultList);
+        return resultList;
+    }
+
 }

@@ -3,7 +3,9 @@ package com.hy.task;
 import com.google.gson.JsonObject;
 import com.hy.base.BaseImpl;
 import com.hy.base.IBase;
+import com.hy.core.CacheKey;
 import com.hy.core.Constants;
+import com.hy.core.Table;
 import com.hy.dao.CommonDao;
 import com.hy.util.JPushUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,7 @@ public class CouponExpireRemind {
     @Autowired
     private CommonDao commonDao;
 
-    public void repayMind() {
+    public void useMind() {
         remind("今天",0);
         Calendar calendar=Calendar.getInstance();
         String interval= Constants.getSystemStringValue("COUPON_EXPIRE_REMIND");
@@ -31,11 +33,13 @@ public class CouponExpireRemind {
     }
 
     public void remind(final String dateString,int interval) {
-        List<Map<String, Object>> list1 = commonDao.couponMind(interval);
+        List<Map<String, Object>> list1 = commonDao.queryCouponMindMul(interval);
         list1.forEach((map)->{
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("couponId", (Long)map.get("c_id"));
-            JPushUtil.push("您有一张"+map.get("cd_couponAmount")+"元的优惠券将在"+dateString+" 过期,请尽快使用.","前往使用:",jsonObject,"appMeta");     //TODO:appMeta
+            String appMeta=Constants.hgetCache(CacheKey.APP_META_Prefix,JPushUtil.USER_APP+map.get("c_userId"));
+            //您的优惠券还有3天就失效，再不用就要错失一大波优惠啦
+            JPushUtil.pushByRegId(JPushUtil.USER_APP,"您有一张"+map.get("cd_couponAmount")+"元的优惠券将在"+dateString+" 过期,请尽快使用.","前往使用:",jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]);     //TODO:appMeta
         });
     }
 
