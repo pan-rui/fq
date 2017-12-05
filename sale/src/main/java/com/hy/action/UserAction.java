@@ -66,7 +66,7 @@ public class UserAction extends BaseAction {
         if (paramsVo.getParams().get("pwd").equals(user.get("pwd"))) {
             if (StringUtils.isEmpty(uClientSn)) {
                 baseDao.updateByProsInTab(tableName, ParamsMap.newMap(Table.Employee.CLIENT_SN.name(), clientSn).addParams(Table.Employee.PHONE.name(), phone));
-                Constants.setCacheValue("tmp", CacheKey.U_ + phone, SerializeUtil.serialize(user));     //缓存登录信息
+//                Constants.setCacheValue("tmp", CacheKey.U_ + phone, SerializeUtil.serialize(user));     //缓存登录信息
                 Constants.setCache(CacheKey.U_SN_Prefix + phone, clientSn);        //TODO:更新用户表CLIENT_SN字段时缓存起来
             } else {
                 Constants.setCache(CacheKey.U_SN_Prefix + phone, uClientSn);        //TODO:更新用户表CLIENT_SN字段时缓存起来
@@ -75,8 +75,9 @@ public class UserAction extends BaseAction {
                 }
             }
             String token = ImageCode.getPartSymbol(32);
-            Constants.setCacheOnExpire(CacheKey.U_TOKEN_Prefix + phone, token, sessionExpire);
-            Constants.hsetCache(CacheKey.APP_META_Prefix,"S_"+user.get("id"),appMeta);
+            Long id= (Long) user.get("id");
+            Constants.setCacheOnExpire(CacheKey.U_TOKEN_Prefix + id, token, sessionExpire);
+            Constants.hsetCache(CacheKey.APP_META,"S_"+phone,appMeta);
             return new BaseResult(0, ParamsMap.newMap("token", token).addParams("userInfo", user));
         } else return new BaseResult(ReturnCode.LOGIN_PWD_ERROR);
     }

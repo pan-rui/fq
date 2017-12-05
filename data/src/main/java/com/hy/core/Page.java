@@ -18,6 +18,7 @@ public class Page<T> implements Serializable{
     private T params ;//其他的参数我们把它分装成一个Map对象
     private Map<String,Object> matchs;
     private Map<String,String> orderMap;
+    private String tableName;
 
     public int getPageNo() {
         return pageNo;
@@ -87,6 +88,14 @@ public class Page<T> implements Serializable{
     public Page setOrderMap(Map<String, String> orderMap) {
         this.orderMap = orderMap;
         return this;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 
     @Override

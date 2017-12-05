@@ -32,8 +32,8 @@ public class CommonDao {
         return sqlSessionTemplate;
     }
 
-    public Map<String, Object> queryUserInfo(Long userId) {
-        return sqlSessionTemplate.selectOne(className + ".queryUserInfoMul", ParamsMap.newMap("userId", userId));
+    public Map<String, Object> queryUserInfoMul(Object userId,String openId) {
+        return sqlSessionTemplate.selectOne(className + ".queryUserInfoMul", ParamsMap.newMap("userId", userId).addParams("openId",openId));
     }
 
     public List<Map<String, Object>> queryCJUserPageMul(final Page page) {
@@ -108,4 +108,25 @@ public class CommonDao {
         return resultList;
     }
 
+    public List<Map<String, Object>> queryRepayRecordTab(Object userId,String date) {
+        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryRepayRecordTab", ParamsMap.newMap("userId", userId).addParams("date",date));
+        return resultList;
+    }
+
+    public List<Map<String, Object>> queryCouponPageMul(final Page page) {
+        List<Map<String,Object>> resultList=sqlSessionTemplate.selectList(className + ".queryCouponPageMul", ParamsMap.newMap("page", page));
+        page.setResults(resultList);
+        return resultList;
+    }
+
+    public List<Map<String, Object>> queryValidCoupon(Object userId) {
+        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryValidCoupon", ParamsMap.newMap("userId", userId));
+        return resultList;
+    }
+
+    public List<Map<String, Object>> queryUserInsurancdPageMul(final Page page) {
+        List<Map<String,Object>> resultList=sqlSessionTemplate.selectList(className + ".queryUserInsurancdPageMul", ParamsMap.newMap("page", page));
+        page.setResults(resultList);
+        return resultList;
+    }
 }

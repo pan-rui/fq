@@ -71,7 +71,10 @@ public class GenerateAction {
         sbTab.append("\tpublic static final String FQ = \"fq.\";\n");
         sbTab.append("\tpublic static final String ID = \"ID\";\n");
         sbTab.append("\tpublic static final String IS_ENABLE = \"IS_ENABLE\";\n");
+        sbTab.append("\tpublic static final String SEQ = \"SEQ\";\n");
         sbTab.append("\tpublic static final String USER_ID = \"USER_ID\";\n");
+        sbTab.append("\tpublic static final String UP_ID = \"UP_ID\";\n");
+        sbTab.append("\tpublic static final String UTIME = \"UTIME\";\n");
         sbTab.append("\tpublic static final String DESC = \"DESC\";\n");
         sbTab.append("\tpublic static final String ASC = \"ASC\";\n");
 /*        sbTab.append("\tpublic static final String SEPARATE_TREE = \">\";\n");

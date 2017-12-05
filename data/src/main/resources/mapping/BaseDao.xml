@@ -5,11 +5,13 @@
 <mapper namespace="com.hy.dao.BaseDao">
         <select id="queryListInTab" parameterType="map" resultType="map">
             select * FROM ${tableName}
+            <if test="params != null">
             <trim prefix="where" prefixOverrides="or | and">
                 <foreach collection="params" item="item" index="key" separator=" and ">
                     <if test="null != item">${key}=#{item}</if>
                 </foreach>
             </trim>
+            </if>
             <if test="null != orderMap">
 		        <trim prefix="order by" prefixOverrides=",">
 		            <foreach collection="orderMap" item="item" index="key" separator=",">
@@ -21,11 +23,13 @@
 
     <select id="queryListInT" parameterType="map" resultType="map">
         select * FROM ${tableName}
+        <if test="params != null">
         <trim prefix="where" prefixOverrides="or | and">
             <foreach collection="params" item="item" index="key" separator=" and ">
                 <if test="null != item">${key}=#{item}</if>
             </foreach>
         </trim>
+        </if>
         <if test="null != orderMap">
             <trim prefix="order by" prefixOverrides=",">
                 <foreach collection="orderMap" item="item" index="key" separator=",">
@@ -37,11 +41,13 @@
 
     <select id="queryListSufInTab" parameterType="map" resultType="map">
         select * FROM ${tableName}
+        <if test="params !=null ">
         <trim prefix="where" prefixOverrides="or | and">
             <foreach collection="params" item="item" index="key" separator=" and ">
                 <if test="null != item">${key}=#{item}</if>
             </foreach>
         </trim>
+        </if>
         <if test="null != orderMap">
             <trim prefix="order by" prefixOverrides=",">
                 <foreach collection="orderMap" item="item" index="key" separator=",">
@@ -49,7 +55,7 @@
                 </foreach>
             </trim>
         </if>
-        #{sufSql}
+        ${sufSql}
     </select>
 
     <select id="queryByProsInTab" parameterType="map" resultType="map">
@@ -78,7 +84,7 @@
         select * from ${tableName}
     </select>
 
-        <select id="queryAllOnSortInTab" parameterType="map" resultType="map">
+<!--        <select id="queryAllOnSortInTab" parameterType="map" resultType="map">
             select * from ${tableName}
             <if test="null != orderMap">
 		        <trim prefix="order by" prefixOverrides=",">
@@ -87,22 +93,43 @@
 		            </foreach>
 		        </trim>
 	        </if>
-        </select>
+        </select>-->
         
-        <update id="updateByProsInTab" parameterType="map">
+        <update id="updateByMapInTab" parameterType="map">
             UPDATE ${tableName}
             <trim prefix="set" prefixOverrides=",">
                 <foreach collection="params" item="item" index="key" separator=",">
                     ${key}=#{item}
                 </foreach>
             </trim>
+            <trim prefix="where" prefixOverrides="or | and">
+                <foreach collection="condition" item="item" index="key" separator=" and ">
+                    <if test="null != item">${key}=#{item}</if>
+                </foreach>
+            </trim>
         </update>
+
+    <update id="updateByProsInTab" parameterType="map">
+        UPDATE ${tableName}
+        <trim prefix="set" prefixOverrides=",">
+            <foreach collection="params" item="item" index="key" separator=",">
+                ${key}=#{item}
+            </foreach>
+        </trim>
+    </update>
         
         <delete id="deleteByProsInTab" parameterType="map">
             delete from ${tableName}
             <trim prefix="where" prefixOverrides="or | and">
                 <foreach collection="params" item="item" index="key" separator=" and ">
-                    <if test="null != item">${key}=#{item}</if>
+                    <choose>
+                        <when test='key=="IDS"'>
+                            ID in (${item})
+                        </when>
+                        <otherwise>
+                          <if test="null != item">${key}=#{item}</if>
+                        </otherwise>
+                    </choose>
                 </foreach>
             </trim>
         </delete>
@@ -219,10 +246,10 @@
 	    </select>-->
 
     <select id="queryPageInTab" parameterType="map" resultType="map">
-        select * from ${tableName}
+        select * from ${tableName} where 1=1
         <if test="null != page.params">
-            <trim prefix="where" prefixOverrides="or | and">
-                <foreach collection="page.params" item="item" index="key" separator=" and ">
+            <trim prefix="" prefixOverrides="or | and">
+                <foreach collection="page.params" item="item" index="key" open="and " separator=" and ">
                     <if test="null != item">
                         ${key} = #{item}
                     </if>
@@ -230,8 +257,8 @@
             </trim>
         </if>
         <if test="null != page.matchs">
-            <trim prefix="and" prefixOverrides="or | and">
-            <foreach collection="page.matchs" item="item" index="key" separator=" and ">
+            <trim prefix="" prefixOverrides="or | and">
+            <foreach collection="page.matchs" item="item" index="key" open="and " separator=" and ">
                 <if test="null != item">
                     ${key} LIKE '%${item}%'
                 </if>

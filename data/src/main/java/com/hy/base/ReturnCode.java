@@ -34,7 +34,8 @@ public enum ReturnCode implements Serializable {
     Server_Exec_Timeout(8002, "服务端执行超时"),
 
 
-    ORDER_LIMIT_SIZE(9001,"未付款的订单数量已超过限制。");
+    NOT_SUPPORTED_PAY_TYPE(9011, "不支持的支付方式!"),
+    ORDER_LIMIT_SIZE(9001,"您目前最多只能购买3件商品。");
 
     private String msg;
     private int code;

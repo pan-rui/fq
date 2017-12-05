@@ -22,7 +22,7 @@ public class ProductAttrAction extends BaseAction {
     private String tableName = Table.FQ + Table.C_PRODUCT_ATTRIBUTE;
 
     @PostMapping("")
-    public BaseResult getByProduct(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess ParamsVo paramsVo) {
+    public BaseResult getByProduct(@RequestHeader(Constants.APP_VER) String appVer, @EncryptProcess ParamsVo paramsVo) {
         return new BaseResult(ReturnCode.OK, baseDao.queryListInTab(tableName, paramsVo.getParams().addParams(Table.IS_ENABLE,1), ParamsMap.newMap(Table.CProductAttribute.SEQ.name(),"asc")));
 
     }

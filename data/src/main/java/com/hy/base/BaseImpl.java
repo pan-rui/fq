@@ -151,7 +151,6 @@ public class BaseImpl implements IBase, ApplicationContextAware, InitializingBea
         for (int i = 0; i < dataMeta.size(); i++) {
             Map<String, Object> map = dataMeta.get(i);
             String tableName = (String) map.get("TABLE_NAME");
-             tableMap= new HashMap<>();
 //            fqMap.put(Table.FQ + tableName, new HashMap<>());
             String columnName= (String) map.get("COLUMN_NAME");
             String columnComment = (String) map.get("COLUMN_COMMENT");
@@ -165,6 +164,7 @@ public class BaseImpl implements IBase, ApplicationContextAware, InitializingBea
                 }
                 prevTable = tableName;
                 sb = new StringBuffer();
+                tableMap= new HashMap<>();
                 sb.append(Table.SEPARATE_SPLIT).append(columnName).append(Table.SPACE).append(ColumnProcess.encryptVal(columnName));
                 tableMap.put(columnName, columnComment);
             }
@@ -196,7 +196,7 @@ public class BaseImpl implements IBase, ApplicationContextAware, InitializingBea
                List<Map<String,Object>> results= baseDao.queryAllInTab(tableName);
                         if ("fq.SYSTEM_DICT".equals(tableName)) {
                             results.forEach((sd) ->{
-                                if("1".equals(sd.get("isEnable")))
+                                if((boolean)sd.get("isEnable"))
                                     setCacheOfValue("system", sd.get("code"), sd.get("value"));
                             });
                         }else
@@ -237,6 +237,7 @@ public class BaseImpl implements IBase, ApplicationContextAware, InitializingBea
         Constants.cacheManager = this.cacheManager;
         Constants.jedisPool = this.jedisPool;
         Constants.applicationContext = this.applicationContext;
+        Constants.config = (Properties) applicationContext.getBean("config");
         Constants.publicKey = Constants.getSystemStringValue("PUBLIC_KEY");
         initApplication();
     }

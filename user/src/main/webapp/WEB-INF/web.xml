@@ -30,7 +30,7 @@
     </listener>
 <!--    <listener>
         <listener-class>
-            com.ygsten.LogbackConfigListen
+            com.hysten.LogbackConfigListen
         </listener-class>
     </listener>-->
 
@@ -147,5 +147,9 @@
     </jsp-config>
     <session-config>
         <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>false</http-only>
+        </cookie-config>
     </session-config>
+
 </web-app>

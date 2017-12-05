@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +25,7 @@ public class Constants {
     public static JedisPool jedisPool;
     public static ApplicationContext applicationContext;
     public static String publicKey = "Crypt_Pub_Key";
+    public static Properties config;
     public static final String APPLICATION_JSON = "application/json;charset=utf-8";
     public static final String USER_ID = "hyUI";
     public static final String USER_PHONE = "hyUP";
@@ -31,6 +33,7 @@ public class Constants {
     public static final String USER_TOKEN = "hyUT";
     public static final String APP_VER = "hyAV";
     public static final String CLIENT_VER = "hyCV";
+    public static final String OPENID = "openId";
     public static final String USER="USER";
     public static final String SALE="SALE";
     public enum ClientType {

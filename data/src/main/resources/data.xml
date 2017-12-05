@@ -4,7 +4,7 @@
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:util="http://www.springframework.org/schema/util" xmlns:c="http://www.springframework.org/schema/c"
        xmlns:cache="http://www.springframework.org/schema/cache" xmlns:aop="http://www.springframework.org/schema/aop"
-       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:tx="http://www.springframework.org/schema/tx" xmlns:p="http://www.springframework.org/schema/p"
        xsi:schemaLocation="http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd
     http://www.springframework.org/schema/beans
 http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
@@ -23,13 +23,22 @@ http://www.springframework.org/schema/context/spring-context-4.0.xsd http://www.
     <!--<util:properties id="message" location="classpath:message.properties"/>-->
     <util:properties id="initData" location="classpath*:initData.properties"/>
     <!-- 自动扫描(自动注入) -->
-    <!--<context:component-scan base-package="com.ygo" scoped-proxy="interfaces"/>-->
     <context:component-scan base-package="com.hy.core,com.hy.dao"/>
     <context:annotation-config/>
 
     <!-- 阿里 druid数据库连接池 -->
     <bean id="parentDataSource" class="com.alibaba.druid.pool.DruidDataSource" destroy-method="close" abstract="true">
-        <property name="filters" value="#{config['jdbc.filters']}"/>
+        <!--<property name="filters" value="#{config['jdbc.filters']}"/>-->
+        <property name="proxyFilters">
+            <list>
+                <bean class="com.alibaba.druid.filter.stat.StatFilter"/>
+                <bean class="com.alibaba.druid.wall.WallFilter">
+                    <property name="config">
+                        <bean class="com.alibaba.druid.wall.WallConfig" p:multiStatementAllow="true"/>
+                    </property>
+                </bean>
+            </list>
+        </property>
         <!-- 最大并发连接数 -->
         <property name="maxActive" value="#{config['jdbc.maxActive']}"/>
         <!-- 初始化连接数量 -->
@@ -126,8 +135,8 @@ http://www.springframework.org/schema/context/spring-context-4.0.xsd http://www.
     <bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate" c:sqlSessionFactory-ref="sqlSessionFactory" />
 
     <!-- 打开Spring的Annotation支持 -->
-    <context:annotation-config />
-    <context:component-scan base-package="com.hy.base,com.hy.util,com.hy.service,com.hy.task"/>
+    <!--<context:annotation-config />-->
+    <context:component-scan base-package="com.hy.base,com.hy.util,com.hy.task"/>
     <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
         <property name="nestedTransactionAllowed" value="true"/>
         <property name="dataSource" ref="dataSource"/>

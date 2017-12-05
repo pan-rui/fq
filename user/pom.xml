@@ -125,7 +125,7 @@
                             <outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF/lib</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>E:/IdeaProjects/fq/core/libs</directory>
+                                    <directory>D:/workspace/fq/core/libs</directory>
                                 </resource>
                             </resources>
                         </configuration>

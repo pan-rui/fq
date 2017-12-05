@@ -54,7 +54,7 @@ http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd   http://www.spring
                 <constructor-arg ref="messageConverter"/>
             </bean>
         </mvc:argument-resolvers>
-        <mvc:async-support default-timeout="2000" task-executor="myThreadPool">
+        <mvc:async-support default-timeout="3000" task-executor="myThreadPool">
             <mvc:callable-interceptors>
                 <bean class="com.hy.intercept.ABC"></bean>
             </mvc:callable-interceptors>
@@ -67,6 +67,8 @@ http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd   http://www.spring
                 <mvc:exclude-mapping path="/**/user/add"/>
                 <mvc:exclude-mapping path="/**/user/forget"/>
                 <mvc:exclude-mapping path="/**/sms"/>
+                <mvc:exclude-mapping path="/**/single/*"/>
+                <mvc:exclude-mapping path="/**/userCart"/>
                 <mvc:exclude-mapping path="/**/*.html"/>
                 <bean class="com.hy.intercept.TokenInterceptor"/>
             </mvc:interceptor>
@@ -132,7 +134,7 @@ http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd   http://www.spring
             <list>
                 <bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
                     <property name="prefix" value="/WEB-INF/view/"/>
-                    <property name="suffix" value=".html"/>
+                    <property name="suffix" value=".jsp"/>
                     <property name="contentType" value="text/html; charset=utf-8"/>
                     <property name="exposePathVariables" value="false"/>
                 </bean>
@@ -151,10 +153,10 @@ http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd   http://www.spring
         </property>
     </bean>
 
-    <bean id="htmlviewResolver" class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+<!--    <bean id="htmlviewResolver" class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
         <property name="suffix" value=".html"/>
         <property name="contentType" value="text/html;charset=UTF-8"></property>
-    </bean>
+    </bean>-->
 
     <bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
         <property name="providerClass" value="org.hibernate.validator.HibernateValidator"/>

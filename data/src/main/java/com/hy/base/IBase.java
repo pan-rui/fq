@@ -23,8 +23,11 @@ public interface IBase {
 ////        return applicationContext==null?applicationContext=WebApplicationContextUtils.getWebApplicationContext(request.getSession().getServletContext()):applicationContext;
 //        return Base.applicationContext;
 //    }
+    public static final String DEF_CHATSET = "UTF-8";
     public static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+    public static final SimpleDateFormat sdf2= new SimpleDateFormat("yyyyMMddHHmmss");
     public static final SimpleDateFormat dateSdf= new SimpleDateFormat("yyyy-MM-dd");
+    public static final SimpleDateFormat dateSdf2= new SimpleDateFormat("yyyy/MM/dd");
 
     default BaseResult getFormatError(BindingResult result) {
         List<FieldError> fields = result.getFieldErrors();
@@ -33,7 +36,7 @@ public interface IBase {
             if (!StringUtils.isEmpty(fieldError.getDefaultMessage()))
                 errors.append(MessageFormat.format(fieldError.getDefaultMessage(), fieldError.getField(), fieldError.getRejectedValue()));
         }
-        return new BaseResult(1, errors.toString());
+        return new BaseResult(11111, errors.toString());
     }
     //日期格式化为常用格式
 /*    static String formatDate(Date date) {

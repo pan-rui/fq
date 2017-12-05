@@ -8,7 +8,10 @@ public class Table {
 	public static final String FQ = "fq.";
 	public static final String ID = "ID";
 	public static final String IS_ENABLE = "IS_ENABLE";
+	public static final String SEQ = "SEQ";
 	public static final String USER_ID = "USER_ID";
+	public static final String UP_ID = "UP_ID";
+	public static final String UTIME = "UTIME";
 	public static final String DESC = "DESC";
 	public static final String ASC = "ASC";
 	//
@@ -60,6 +63,8 @@ public class Table {
 	//
 	public static final String PRODUCT_DISCUSS="PRODUCT_DISCUSS";
 	//
+	public static final String PRODUCT_INSURANCE="PRODUCT_INSURANCE";
+	//
 	public static final String PRODUCT_STORE="PRODUCT_STORE";
 	//
 	public static final String PRODUCT_TAGS="PRODUCT_TAGS";
@@ -84,9 +89,25 @@ public class Table {
 	//
 	public static final String USER_CALENDAR="USER_CALENDAR";
 	//
+	public static final String USER_CART="USER_CART";
+	//
 	public static final String USER_COLLECT="USER_COLLECT";
 	//
+	public static final String USER_DETAIL="USER_DETAIL";
+	//
+	public static final String USER_INSURANCE="USER_INSURANCE";
+	//
 	public static final String USER_NOTE="USER_NOTE";
+	//
+	public static final String t_admin="t_admin";
+	//
+	public static final String t_menu="t_menu";
+	//
+	public static final String t_role="t_role";
+	//
+	public static final String t_role_admin="t_role_admin";
+	//
+	public static final String t_role_auth="t_role_auth";
 
 	public enum Account{
 		ID,	//ID
@@ -168,6 +189,7 @@ public class Table {
 		PIC,	//品牌Logo保存Logo图片的名称
 		LIST_PIC,	//品牌图片:用于列表显示；保存图片的名称
 		CONTENT,	//品牌介绍:图文结合方式，编辑器编辑
+		CLASSIFY_LIST_ID,	//分类ID列表
 		CTIME,	//增加时间
 		IS_ENABLE,	//1正常 0停用
 		SEQ,	//排序
@@ -184,6 +206,7 @@ public class Table {
 		SEQ,	//排序
 		IS_ENABLE,	//状态,1:有效,0无效
 		PIC,	//分类图标
+		LIST_PIC,	//banner
 	}
 
 	public enum Company{
@@ -217,9 +240,10 @@ public class Table {
 		COUPON_AMOUNT,	//礼券金额
 		CTIME,	//创建时间
 		REMARK,	//备注(code)
+		COND,	//{"limit(条件)": {"money(消费金额)": 3999, "insure(险种)": ["bx1"], "buyNum(第几次购买)": 2, "period(期数)": 12}, "discounts(优惠项)": {"inst(保险费,0为免保险费)": 0, "rate(分期利率,0为免息)": 0,"exemptMon(免月供数)":2,"exemptMoney(首月供减免":100}}
 		IS_ENABLE,	//状态{"1":"启用","0":"禁用"}
 		IS_WITHDRAW,	//允许提现{"1":"是","0":"否"}
-		COUPON_TYPE,	//类型{"0":"红包","1":"推荐奖励","2":"其它"}
+		COUPON_TYPE,	//类型{"a":"红包","b":"推荐奖励","c":"现金券","e":"免费券","d":"免息券","x":"优惠活动"}
 		EXPIRE_DATE,	//过期时间
 	}
 
@@ -250,6 +274,7 @@ public class Table {
 		ATT_VALS,	//属性可选值[值1，值2...]
 		SEQ,	//排序
 		IS_ENABLE,	//状态1启用,0禁用
+		affected,	//是否影响价格
 		CTIME,	//增加时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间
@@ -372,14 +397,16 @@ public class Table {
 		PRODUCT_ID,	//商品ID
 		PRODUCT_NAME,	//商品名称
 		ORDER_NO,	//流水号
-		PAY_TYPE,	//付款方式{"0":"支付宝","1":"微信"}
+		PAY_TYPE,	//付款方式{"0":"支付宝","1":"微信","2":"银联","3":"余额","4":"银联控件","5":"支付宝手机网页"}
 		CONTACT,	//收货地址ID
 		DELIVERY,	//配送方式
 		ATTR,	//商品规格属性
 		MONEY,	//消费金额
 		PERIOD,	//分期详情
 		ITEMS,	//[{id,storeId,name,price,size}....]
+		SUM,	//商品件数
 		DISCOUNT,	//会员折扣
+		COUPONS,	//使用的优惠券:[a,b,c]
 		PREFERENTIAL,	//优惠金额
 		FREIGHT,	//运费
 		BILL,	//发票号
@@ -401,6 +428,7 @@ public class Table {
 		LOGISTICS_STATE,	//物流状态
 		REQ_IP,	//请求IP
 		SHIPMENTS_INFO,	//发货详情
+		IS_ENABLE,	//是否启用:{"0":"否","1":"是"}
 		CTIME,	//创建时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间
@@ -410,16 +438,19 @@ public class Table {
 		ID,	//ID
 		USER_ID,	//用户ID
 		ORDER_ID,	//订单ID
+		PRODUCT_ID,	//商品ID
 		REPAY_NUM,	//还款期数
+		PERIOD_SUM,	//总期数
 		REPAY_TYPE,	//还款类型
 		PLANREPAY_DATE,	//计划还款日
 		PLANREPAY_MONEY,	//计划还款金额
 		OVERDUE,	//逾期利息
 		PAY_DATE,	//实际还款日
 		USE_SCORE,	//积分抵扣金额
-		REAL_REPAY_MONEY,	//实际还款金额
-		TRADE_NO,	//流水号
-		STATUS,	//结清状态：1:已还,0:未还,2:提前还,3:逾期
+		REAL_REPAY_MONEY,	//实际还款本金
+		REAL_REPAY_INTEREST,	//实际还款利息
+		REPAY_NO,	//流水号
+		STATUS,	//结清状态：1:已还,0:未还,2:提前还,3:逾期,4:减免
 		CTIME,	//创建时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间
@@ -431,6 +462,7 @@ public class Table {
 		PRO_CODE,	//供应商商品编号
 		NAME,	//商品名称
 		NUM,	//商品数量
+		SOLD_NUM,	//销量
 		BUY_LIMIT,	//限购数量,0不限购
 		PRO_AREA,	//产地（描述）
 		CLASSIFY_ID,	//商品分类ID
@@ -439,7 +471,7 @@ public class Table {
 		TAGS,	//标签id 使用,分隔
 		ATT_JSON,	//[{属性组:{属性1:值1，属性2:值2...},库存:xx,累积售出:xx,进货价:XX,售价:xx,优惠价:xxx}...]
 		PERIODS,	//[{期数:xx,首付比:xx,分期利率:xx,手续费:xxx,产品险:xx}...]
-		PERIOD_EXT,	//{首付比:[……],产品险:[…….]}
+		PERIOD_EXT,	//{首付比:[……],产品险:[{name:xx,money:xx}…….]}
 		INTRO,	//商品简介
 		DETAILS,	//商品详情
 		FAQ,	//常见问题
@@ -456,7 +488,6 @@ public class Table {
 		RECHECK_MEMO,	//审意见
 		IS_ENABLE,	//商品状态,1有效,0无效
 		STORE_ID,	//所属机构（店铺）ID
-		LOGISTICS_NO,	//物流编号
 		REMARK,	//产品备注
 		UP_ID,	//修改人
 		UTIME,	//修改时间
@@ -479,9 +510,25 @@ public class Table {
 		USER_ID,	//用户ID
 		FLOORS,	//楼层
 		PARENT_ID,	//上级ID
+		CONTENT,	//评论内容
+		PICS,	//上传图集
 		CTIME,	//增加时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间
+	}
+
+	public enum ProductInsurance{
+		ID,	//产品ID
+		NAME,	//保险名称
+		INSUR_MONEY,	//保险费
+		DAMAGE,	//最高赔付额
+		CONTENTS,	//合同
+		IS_ENABLE,	//是否启用
+		ATTACH,	//附件URL
+		INSURANCE_COMPANY,	//保险公司名称
+		TEL,	//经纪人电话
+		CTIME,	//
+		UTIME,	//
 	}
 
 	public enum ProductStore{
@@ -500,7 +547,7 @@ public class Table {
 	public enum ProductTags{
 		ID,	//主键
 		TAG_NAME,	//标签名称
-		FROM,	//来源，如果为空表示公司添加的，各站点或店铺可以使用但不允许修改
+		SRC,	//来源，默认为品牌ID,如果为空表示公司添加的，各站点或店铺可以使用但不允许修改
 		ACT_TYPE,	//活动类型
 		ACT_RANGE,	//优惠幅度
 	}
@@ -590,15 +637,17 @@ public class Table {
 
 	public enum TradeRecord{
 		ID,	//ID
-		TRAND_TYPE,	//交易类型
+		TRADE_TYPE,	//交易类型:{"firstPay":"首付","freeRepay":"自由还款","repay":"按期还款"}
 		ACCT_TIME,	//交易时间
 		USER_ID,	//用户ID
 		PRODUCT_ID,	//商品ID
 		SOURCE,	//用户卡号
 		TRADE_AMOUNT,	//交易金额
-		TRADE_TYPE,	//交易方式 0银联,1支付宝,2微信
+		PAY_TYPE,	//支付方式 0支付宝,1微信,2银联,3余额
+		ORDER_NO,	//订单号
 		TRADE_NO,	//交易流水号
 		PAY_INFO,	//交易详情
+		BILL_DATE,	//计划还款日期
 		CTIME,	//增加时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间
@@ -612,7 +661,8 @@ public class Table {
 		SEX,	//客户性别:1男,0女
 		TYPE,	//客户类型
 		CARD_NO,	//身份证号码
-		BIZER_ID,	//销售员ID
+		BIZER_ID,	//销售员编号
+		INVITER_ID,	//邀请人ID
 		CTIME,	//创建时间
 		UP_ID,	//更新人
 		UTIME,	//更新时间
@@ -620,58 +670,23 @@ public class Table {
 		CLIENT_SN,	//客户端序列号
 		IS_ENABLE,	//状态 1:启用,0禁用
 		CERT_STATUS,	//实名认证状态:0待认证,1已认证,2认证失败,3待审核，4已审核5审核失败
-		SOCIAL_NUMBER,	//社保号码
-		DEGREE,	//教育程度
-		MARRY,	//婚姻状况
-		EMAIL,	//电子邮件
-		FIRST_WORKTIME,	//首次参加工作时间
-		CHILDREN_NUMBER,	//子女数目
-		ADDRE_REGIST,	//户籍地址
 		PHONE,	//手机
 		PWD,	//登录密码
-		ADDRESS,	//居住地址
-		MONTHLY_INCOME,	//月收入
-		OTHER_INCOME,	//其它收入
-		FAMILY_INCOME,	//家庭月收入
-		MONTHLY_SPENDING,	//月支出
-		UNITNAME,	//单位名称
-		INDUSTRY,	//行业类别
-		UNITTYPE,	//单位性质
-		DEPARTMENT,	//任职部门
-		DUTY,	//职位级别
-		ENTRY_DATE,	//入职日期
-		UNIT_ADDRESS,	//单位所在地址
-		CREATEDBY,	//创建人
-		CREATEDON,	//创建时间
 		OSS_ID,	//照片地址
-		IDENTITY_CARD_VALIDITY_PERIOD,	//身份证有效期
-		ISSUING_ORGAN,	//发证机关
+		OPEN_ID,	//微信OpenID
 		QQ,	//QQ
 		WEIXIN,	//微信
-		MATE_ADDRESS,	//配偶联系地址
-		MATE_ID_CODE,	//配偶身份证号
-		HOUSEHOLD_POSTCODE,	//户籍邮编
-		LIVE_POSTCODE,	//居住邮编
-		UNIT_PHONE,	//单位电话
-		UNIT_EXT_PHONE,	//单位电话分机
 		TPOS_INFO,	//来源信息:{tposName:wx,tposId:openId,tAccount:234353,tNickName:haha,......}
-		CAREER,	//职业
-		PARTER_NAME,	//配偶姓名
-		UNIT_WORKTIME,	//现单位工作时长/距毕业时长（月份）
-		POST_CODE,	//邮寄邮编
-		UNIT_POSTCODE,	//单位邮编
-		MATE_MOBEL,	//配偶电话
-		MATE_UNIT,	//配偶单位
-		UNITN_WEIXIN,	//单位微信公众号
-		PARTE_WEIXIN,	//配偶微信号
-		PARTE_QQ,	//配偶QQ号
+		BANK_MOBILE,	//客户银行卡预留手机号
+		BANK_CARD,	//客户银行卡号
+		CONTAINS_JT,	//
 		COMPANY_ID,	//所属集团ID
 	}
 
 	public enum UserAttach{
 		ID,	//主键
 		USER_ID,	//用户ID
-		ATTACH_TYPE,	//附件类型:0身份证正面，1身份证反，2,银行卡 9照片
+		ATTACH_TYPE,	//附件类型:0身份证正面，1身份证反，2,银行卡,3,临时文件,4,APK,5,评论,6售后,7商品图,8品牌图,9照片,a,分类图
 		URL,	//附件URL
 		ATTACH_LEN,	//附件大小
 		CTIME,	//创建时间
@@ -711,6 +726,25 @@ public class Table {
 		IS_ENABLE,	//删除：1有效，0无效
 	}
 
+	public enum UserCart{
+		ID,	//ID
+		CTIME,	//创建时间
+		USER_ID,	//用户ID
+		JSESSION_ID,	//如果用户未登录，存的JSESSION_ID,,查询用户的购物车是JSESSION_ID或者USER_ID
+		PRODUCT_ID,	//商品ID
+		PRODUCT_NAME,	//商品名称
+		TAGS,	//
+		PIC,	//缩略图地址
+		REMARK,	//备注
+		STORE_ID,	//店铺ID
+		SIZE,	//数量
+		ATTR,	//商品属性
+		PERIOD,	//分期信息
+		PRICE,	//价格
+		UP_ID,	//修改人ID
+		UTIME,	//修改时间
+	}
+
 	public enum UserCollect{
 		ID,	//主键
 		USER_ID,	//用户ID
@@ -722,6 +756,64 @@ public class Table {
 		UP_ID,	//更新人
 		UTIME,	//更新时间
 		IS_ENABLE,	//1：正常；0：删除
+	}
+
+	public enum UserDetail{
+		ID,	//ID
+		USER_ID,	//用户ID
+		SOCIAL_NUMBER,	//社保号码
+		DEGREE,	//教育程度
+		MARRY,	//婚姻状况
+		EMAIL,	//电子邮件
+		FIRST_WORKTIME,	//首次参加工作时间
+		CHILDREN_NUMBER,	//子女数目
+		ADDRE_REGIST,	//户籍地址
+		ADDRESS,	//居住地址
+		MONTHLY_INCOME,	//月收入
+		OTHER_INCOME,	//其它收入
+		FAMILY_INCOME,	//家庭月收入
+		MONTHLY_SPENDING,	//月支出
+		UNITNAME,	//单位名称
+		INDUSTRY,	//行业类别
+		UNITTYPE,	//单位性质
+		DEPARTMENT,	//任职部门
+		DUTY,	//职位级别
+		ENTRY_DATE,	//入职日期
+		UNIT_ADDRESS,	//单位所在地址
+		CREATEDBY,	//创建人
+		CTIME,	//创建时间
+		IDENTITY_CARD_VALIDITY_PERIOD,	//身份证有效期
+		ISSUING_ORGAN,	//发证机关
+		QQ,	//QQ
+		WEIXIN,	//微信
+		MATE_ADDRESS,	//配偶联系地址
+		MATE_ID_CODE,	//配偶身份证号
+		HOUSEHOLD_POSTCODE,	//户籍邮编
+		LIVE_POSTCODE,	//居住邮编
+		UNIT_PHONE,	//单位电话
+		UNIT_EXT_PHONE,	//单位电话分机
+		CAREER,	//职业
+		PARTER_NAME,	//配偶姓名
+		UNIT_WORKTIME,	//现单位工作时长/距毕业时长（月份）
+		POST_CODE,	//邮寄邮编
+		UNIT_POSTCODE,	//单位邮编
+		MATE_MOBEL,	//配偶电话
+		MATE_UNIT,	//配偶单位
+		UNITN_WEIXIN,	//单位微信公众号
+		PARTE_WEIXIN,	//配偶微信号
+		PARTE_QQ,	//配偶QQ号
+		UP_ID,	//更新人
+		UTIME,	//更新时间
+	}
+
+	public enum UserInsurance{
+		ID,	//
+		INSURANCE_ID,	//产品险ID
+		USER_ID,	//
+		PRODUCT_ID,	//商品ID
+		PRODUCT_NAME,	//
+		CTIME,	//
+		UTIME,	//
 	}
 
 	public enum UserNote{
@@ -736,5 +828,50 @@ public class Table {
 		UP_ID,	//修改人
 		UTIME,	//修改时间
 		IS_ENABLE,	//启用：1有效，0无效
+	}
+
+	public enum TAdmin{
+		id,	//ID
+		adminName,	//用户名
+		pwd,	//密码
+		createTime,	//创建时间
+		isEnable,	//状态{"0":"启用","1":"禁用"}
+	}
+
+	public enum TMenu{
+		id,	//ID
+		menuName,	//名称
+		url,	//路径
+		menuLevel,	//菜单级别{"1":"一级菜单","2":"二级菜单","3":"三级菜单"}
+		isIntercept,	//拦截{"0":"否","1":"是"}
+		parentId,	//父ID
+		icon,	//图标
+		sort,	//排序
+		fixedly,	//固定列
+		active,	//活动列
+		search,	//搜索条件
+		operate,	//操作项
+		cMenu,	//右键菜单项
+		help,	//帮助内容
+	}
+
+	public enum TRole{
+		id,	//ID
+		roleName,	//角色名
+		description,	//描述
+	}
+
+	public enum TRoleAdmin{
+		id,	//ID
+		roleId,	//角色ID
+		adminId,	//管理员ID
+		createTime,	//创建时间
+	}
+
+	public enum TRoleAuth{
+		id,	//ID
+		roleId,	//角色ID
+		menuId,	//菜单ID
+		createTime,	//创建时间
 	}
 }

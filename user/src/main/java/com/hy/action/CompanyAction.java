@@ -25,10 +25,12 @@ public class CompanyAction extends BaseAction {
     public Object getList(@RequestHeader(Constants.USER_ID) String userId) {
         return new BaseResult(0,baseDao.queryAllInTab(tableName));
     }
+
     @PostMapping("")
     public Object getPage(@RequestHeader(Constants.USER_ID) String userId, @EncryptProcess Page page) {
         page.getParams().put(Table.IS_ENABLE, 1);
         baseDao.queryPageInTab(tableName, page);
         return new BaseResult(0,page);
     }
+
 }

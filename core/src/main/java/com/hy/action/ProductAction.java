@@ -22,7 +22,7 @@ public class ProductAction extends BaseAction {
     private BaseDao baseDao;
     private String tableName=Table.FQ+Table.PRODUCT;
     @GetMapping("id")
-    public BaseResult getByID(@RequestHeader(Constants.USER_PHONE) String phone, @RequestParam("pId") Long pId) {
+    public BaseResult getByID(@RequestHeader(Constants.APP_VER) String appVer, @RequestParam("pId") Long pId) {
 /*        if (StringUtils.isEmpty(pId)) {
             return new BaseResult(ReturnCode.OK, baseDao.queryAllInTab(Table.FQ + Table.PRODUCT));
         }*/
@@ -30,7 +30,7 @@ public class ProductAction extends BaseAction {
     }
 
     @PostMapping("page")
-    public BaseResult getByPage(@RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess Page page) {
+    public BaseResult getByPage(@RequestHeader(Constants.APP_VER) String appVer, @EncryptProcess Page page) {
         baseDao.queryPageInTab(tableName, page);
         return new BaseResult(ReturnCode.OK, page);
     }

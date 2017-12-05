@@ -91,16 +91,28 @@ public class BaseDao {
         return sqlSessionTemplate.selectList(className + ".queryAllInTab", paramsMap);
     }
 
-    @DataSource
+/*    @DataSource
     public List<Map<String, Object>> queryAllOnSortInTab(String tableName, Map<String, Object> orderMap) {
         Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("orderMap", orderMap);
         return sqlSessionTemplate.selectList(className + ".queryAllOnSortInTab", paramsMap);
-    }
+    }*/
 
     @Caching(evict = {@CacheEvict(keyGenerator = "myKeyGenerator", cacheManager = "cacheManager"),@CacheEvict(key = "#tableName", cacheManager = "cacheManager")})
     @DataSource(DataSourceHolder.DBType.master)
     public int updateByProsInTab(String tableName, Map<String, Object> params) {
         Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("params", params);
+        return sqlSessionTemplate.update(className + ".updateByProsInTab", paramsMap);
+    }
+
+    @DataSource(DataSourceHolder.DBType.master)
+    public int updateByMapInTab(String tableName, Map<String, Object> params,Map<String,Object> condition) {
+        Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("params", params).addParams("condition",condition);
+        return sqlSessionTemplate.update(className + ".updateByMapInTab", paramsMap);
+    }
+
+    @DataSource(DataSourceHolder.DBType.master)
+    public int updateByProsInTab(String tableName, Map<String, Object> params,Integer size) {
+        Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("params", params).addParams("size",size);
         return sqlSessionTemplate.update(className + ".updateByProsInTab", paramsMap);
     }
 

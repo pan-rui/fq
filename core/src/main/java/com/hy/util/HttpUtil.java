@@ -1,6 +1,7 @@
 package com.hy.util;
 
 import com.alibaba.fastjson.JSON;
+import com.hy.base.IBase;
 import com.hy.core.ParamsMap;
 import com.hy.vo.Protocol;
 import org.apache.commons.lang.StringUtils;
@@ -17,7 +18,9 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -60,7 +63,7 @@ import java.util.regex.Pattern;
  */
 public class HttpUtil {
     private static HttpClientBuilder builder;
-    private static final Pattern regexp = Pattern.compile("([a-z_]+)=(\\w+)");
+    private static final Pattern regexp = Pattern.compile("(\\w+)=(\\w+)");
 
     static {
         System.setProperty("log4j.configurationFile", "log4j2.xml");
@@ -146,9 +149,10 @@ public class HttpUtil {
                 if (contentType.equals(Protocol.TEXT) || contentType.equals(Protocol.FORM)) {
                     List<NameValuePair> nameValuePairs = new ArrayList<>();
                     params.forEach((k, v) -> nameValuePairs.add(new BasicNameValuePair(k, v.toString())));
+//                    ((HttpPost)request).setEntity(EntityBuilder.create().setParameters(nameValuePairs).setContentEncoding(IBase.DEF_CHATSET).build());
                     ((HttpPost) request).setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
                 } else if (contentType.equals(Protocol.JSON)) {
-                    ((HttpPost) request).setEntity(new StringEntity(JSON.toJSONString(ParamsMap.newMap("params", params)), "UTF-8"));
+                    ((HttpPost) request).setEntity(new StringEntity(JSON.toJSONString(ParamsMap.newMap("params", params)), IBase.DEF_CHATSET));
                 } else if (contentType.equals(Protocol.BYTE)) {
                     ((HttpPost) request).setEntity(EntityBuilder.create().setBinary((byte[]) params.get("byte")).build());
                 }

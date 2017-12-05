@@ -24,9 +24,11 @@ public class CacheKey {
     //    public static final String S_SN_Prefix = "U_SN_";
     //用户认证状态
     public static final String U_CERT_STATUS_Prefix = "U_CERT_STATUS_";
+    public static final String OPENID = "openId";
+    public static final String WX_HEAD= "WX_HEAD";
 
     public static final String U_BANK_Prefix = "U_BANK_";
 
-    public static final String APP_META_Prefix="APP_META_";
+    public static final String APP_META="APP_META";
 
 }

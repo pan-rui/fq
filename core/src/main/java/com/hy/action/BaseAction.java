@@ -80,7 +80,7 @@ public class BaseAction implements IBase, ServletContextAware {
 				errMsg = matcher.group(1);
 			}
 			logger.error(ex.getMessage());
-			return new BaseResult(2202, "数据不可重复，请检查:"+errMsg);
+			return new BaseResult(999, "数据不可重复，请检查:"+errMsg);
 		} else if (ex instanceof DataIntegrityViolationException) {
 			String errMsg="";
 			Matcher matcher = foreignKey.matcher(ex.getMessage());
@@ -98,7 +98,7 @@ public class BaseAction implements IBase, ServletContextAware {
 				if(!CollectionUtils.isEmpty(fieldMap))
 				fieldName = fieldMap.get(errMsg);
 			}
-			return new BaseResult(2203, fieldName+"有误，请确认无误后重试." );
+			return new BaseResult(777, fieldName+"有误，请确认无误后重试." );
 		}
 			logger.error(ex.getMessage());
 		return new BaseResult(ReturnCode.SYSTEM_ERROR);

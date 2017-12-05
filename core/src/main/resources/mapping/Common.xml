@@ -3,12 +3,30 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.hy.dao.CommonDao">
-    <select id="queryUserInfoMul" parameterType="map" resultType="map">
-		SELECT u.*,c.*,ub.BANK_USER_NAME bankUserName,ub.BANK_MOBILE bankMobile,ub.BANK_CARD_NO bankCardNo FROM fq.USER u
+    <select id="queryUserInfoMul" parameterType="map" resultMap="info">
+SELECT u.*,c.* ,ud.* FROM fq.USER u
+  LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+  LEFT JOIN fq.USER_DETAIL ud ON u.ID = ud.USER_ID
+WHERE 1=1
+<if test="userId != null"> AND u.ID=#{userId}</if>
+<if test="openId != null"> AND u.OPEN_ID=#{openId}</if>
+<!--<if test="openId != null"> AND u.OPEN_ID=#{openId} order by u.UTIME desc limit 1</if>-->
+	</select>
+    <resultMap id="info" type="map">
+        <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <association property="userDetail" javaType="map" columnPrefix="ud_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <association property="company" javaType="map" columnPrefix="c_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+    </resultMap>
+<!--		SELECT u.*,c.*,ub.BANK_USER_NAME bankUserName,ub.BANK_MOBILE bankMobile,ub.BANK_CARD_NO bankCardNo FROM fq.USER u
     LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
     JOIN (SELECT BANK_CARD_NO,BANK_MOBILE,BANK_USER_NAME,USER_ID FROM fq.USER_BANK WHERE USER_ID=#{userId} ORDER BY CTIME LIMIT 1) ub ON u.ID=ub.USER_ID
-	</select>
-
+-->
     <select id="queryCJUserPageMul" resultMap="cjUserMap" parameterType="map">
         SELECT u.*,o.*,c.* FROM fq.USER u
         JOIN fq.ORDER o ON u.ID=o.USER_ID
@@ -288,6 +306,7 @@ WHERE o.USER_ID=#{userId}
         <result property="discount" column="o_discount"/>
         <result property="scoreMoney" column="o_scoreMoney"/>
         <result property="bill" column="o_bill"/>
+        <result property="items" column="o_items"/>
         <result property="monthly" column="o_monthly"/>
         <result property="state" column="o_state"/>
         <result property="ctime" column="o_ctime"/>
@@ -329,7 +348,7 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
     WHERE c.STATUS='2' AND DATEDIFF(cd.EXPIRE_DATE,CURDATE())=#{interval}
     </select>
 
-    <select id="queryCouponPageMul" parameterType="map" resultType="map">
+    <select id="queryCouponPageMul" parameterType="map" resultMap="couponMap">
         SELECT c.*,cd.* FROM fq.COUPON c
         JOIN fq.COUPON_DICT cd ON c.COUPON_ID=cd.ID
         <trim prefix="where " prefixOverrides="or | and">
@@ -339,6 +358,12 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
                 </if>
             </foreach>
         </trim>
+    </select>
+
+    <select id="queryValidCoupon" parameterType="map" resultMap="couponMap">
+        SELECT c.ID c_id,cd.ID cd_id,cd.COUPON_AMOUNT cd_couponAmount,cd.COND cd_cond,cd.COUPON_TYPE cd_couponType,cd.COUPON_NAME cd_couponName,c.STATUS c_status FROM COUPON c
+        JOIN COUPON_DICT cd ON c.COUPON_ID=cd.ID
+        WHERE c.STATUS='2' AND c.USER_ID=#{userId} AND cd.EXPIRE_DATE>current_timestamp() AND cd.IS_ENABLE=1;
     </select>
 <resultMap id="couponMap" type="map">
     <association property="coupon" javaType="map" columnPrefix="c_" autoMapping="true">
@@ -370,4 +395,28 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
         </collection>
     </resultMap>
 
+    <select id="queryRepayRecordTab" parameterType="map" resultType="map">
+        SELECT * FROM fq.TRADE_RECORD tr WHERE  tr.PAY_TYPE != 'firstPay' and tr.USER_ID=#{userId} and date_format(tr.BILL_DATE,'%Y-%m')=#{date}
+    </select>
+
+    <select id="queryUserInsurancdPageMul" parameterType="map" resultMap="userInsurance">
+        SELECT ui.*,pi.* FROM fq.USER_INSURANCE ui
+        JOIN fq.PRODUCT_INSURANCE pi ON ui.INSURANCE_ID=pi.ID
+        <trim prefix="where " prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" separator=" and ">
+                <if test="null != item">
+                    ${key}=#{item}
+                </if>
+            </foreach>
+        </trim>
+    </select>
+
+    <resultMap id="userInsurance" type="java.util.LinkedHashMap">
+        <association property="userInsurance" javaType="map" columnPrefix="ci_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <association property="productInsurance" javaType="map" columnPrefix="pi_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+    </resultMap>
 </mapper>

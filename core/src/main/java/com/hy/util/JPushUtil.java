@@ -123,6 +123,8 @@ public class JPushUtil {
 	}
 	
 	public static void main(String[] args) {
-		JPushUtil.pushByRegId(JPushUtil.USER_APP,"测试标题","测试内容",null,"13065ffa4e0c846eb3c");
+		JsonObject jsonObject=new JsonObject();
+		jsonObject.addProperty("aa", "gfweter");
+		JPushUtil.pushByRegId(JPushUtil.USER_APP,"测试标题","测试内容",jsonObject,"161a3797c80058df7f1");
 	}
 }

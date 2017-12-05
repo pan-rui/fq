@@ -11,6 +11,7 @@ import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.scripting.defaults.DefaultParameterHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
@@ -61,17 +62,26 @@ public class PageInterceptor implements Interceptor {
         logger.info(boundSql.getSql());
         logger.info(DataSourceHolder.getLocalDataSource());
         if (sqlId.matches(upSql)) {
+            Object obj = boundSql.getParameterObject();
+            Integer size = (Integer) ((Map) obj).get("size");
+            if(size==null||size==0)
             updateProcess(boundSql);
+            else{
+                updateProcess(boundSql,size);
+            }
+            return invocation.proceed();
         } else if (sqlId.matches(encryptSql)) {
             encryptProcess(boundSql);
             if (sqlId.matches(pageSql)) {
                 pageProcess(invocation, delegate, boundSql);
             }
-        }else if(sqlId.matches(mulitEncryptSql)){
+            return invocation.proceed();
+        } else if (sqlId.matches(mulitEncryptSql)) {
             encryptPro(boundSql);
             if (sqlId.matches(pageSql)) {
                 pageProcess(invocation, delegate, boundSql);
             }
+            return invocation.proceed();
         }
         return invocation.proceed();
     }
@@ -86,7 +96,7 @@ public class PageInterceptor implements Interceptor {
             Connection connection = (Connection) invocation.getArgs()[0];
             //获取当前要执行的sql语句
             String sql = boundSql.getSql();
-            this.setTotalRecord(obj, mappedStatement, connection,sql);
+            this.setTotalRecord((Map)obj, mappedStatement, connection, sql);
             String pageSql = this.getPageSql(page, sql);
             Constants.ReflectUtil.setFieldValue(boundSql, "sql", pageSql);
 //            Constants.ReflectUtil.setFieldValue(boundSql, "parameterObject", page.getParams());
@@ -96,18 +106,18 @@ public class PageInterceptor implements Interceptor {
     public void encryptProcess(final BoundSql boundSql) {
         String sql = boundSql.getSql();
         Matcher matcher = tablePattern.matcher(sql);
-        int index=sql.indexOf("from",9);
-        if(index<0) index = sql.indexOf("FROM",9);
+        int index = sql.indexOf("from", 9);
+        if (index < 0) index = sql.indexOf("FROM", 9);
         if (matcher.find(index)) {
             String tableName = matcher.group(1);
             Matcher matcher1 = tPattern.matcher(sql);
-            if(matcher1.find(6)) {
-                String replaceStr=Constants.getCacheStringValue("columns", tableName);
+            if (matcher1.find(6)) {
+                String replaceStr = Constants.getCacheStringValue("columns", tableName);
                 String prefix = matcher1.group(1);
-                if(prefix==null)
+                if (prefix == null)
                     sql = sql.replaceFirst("(\\w+\\.)?\\*", replaceStr);
                 else
-                    sql = sql.replaceFirst("(\\w+\\.)?\\*",processStr(replaceStr, prefix));
+                    sql = sql.replaceFirst("(\\w+\\.)?\\*", processStr(replaceStr, prefix));
             }
         }
         Constants.ReflectUtil.setFieldValue(boundSql, "sql", sql);
@@ -117,20 +127,22 @@ public class PageInterceptor implements Interceptor {
         String sql = boundSql.getSql();
         String pSql = new String(sql);
         Matcher matcher1 = tPattern.matcher(sql);
-       a: while (matcher1.find()){
+        a:
+        while (matcher1.find()) {
             String prefix = matcher1.group(1);
             Matcher matcher = tablePattern2.matcher(sql.substring(13));
-          b: while (matcher.find()) {
+            b:
+            while (matcher.find()) {
                 String tableName = matcher.group(1);
                 String tableAlias = matcher.group(3);
-              String replaceStr=Constants.getCacheStringValue("columns", tableName);
-              if(prefix==null){
-                  pSql = pSql.replaceFirst("(\\w+\\.)?\\*", replaceStr);
-                  break a;
-                }else if(prefix.substring(0,prefix.length()-1).equals(tableAlias)){
-                  pSql = pSql.replaceFirst("(\\w+\\.)?\\*",processS(replaceStr, prefix,"_"+tableAlias));
-                  break b;
-              }
+                String replaceStr = Constants.getCacheStringValue("columns", tableName);
+                if (prefix == null) {
+                    pSql = pSql.replaceFirst("(\\w+\\.)?\\*", replaceStr);
+                    break a;
+                } else if (prefix.substring(0, prefix.length() - 1).equals(tableAlias)) {
+                    pSql = pSql.replaceFirst("(\\w+\\.)?\\*", processS(replaceStr, prefix, "_" + tableAlias));
+                    break b;
+                }
             }
         }
         logger.info(pSql);
@@ -142,6 +154,27 @@ public class PageInterceptor implements Interceptor {
         int suffix = sql.lastIndexOf(",");
         if (suffix > 0)
             Constants.ReflectUtil.setFieldValue(boundSql, "sql", sql.substring(0, suffix) + " where " + sql.substring(suffix + 1));
+    }
+
+    public void updateProcess(final BoundSql boundSql,int size) {
+        String sql = boundSql.getSql();
+        String inte =",";
+        String[] sqlArr = sql.split(inte);
+        Assert.isTrue(size<sqlArr.length,"SQL UPDATE cond size error:"+sql);
+        StringBuffer sqlSB = new StringBuffer();
+        int tok=sqlArr.length-size-1;
+        for(int i=0;i<sqlArr.length;i++) {
+            if(i<tok)
+                sqlSB.append(sqlArr[i]).append(inte);
+            else if (i == tok) {
+                sqlSB.append(sqlArr[i]).append(" where ");
+            }else if(i==sqlArr.length-1){
+                sqlSB.append(sqlArr[i]);
+            }else{
+                sqlSB.append(sqlArr[i]).append(" and ");
+            }
+        }
+            Constants.ReflectUtil.setFieldValue(boundSql, "sql", sqlSB.toString());
     }
 
     @Override
@@ -158,13 +191,17 @@ public class PageInterceptor implements Interceptor {
         this.mulitEncryptSql = properties.getProperty("mulitEncryptSql");
     }
 
-    private void setTotalRecord(Object paramsObj, MappedStatement mappedStatement, Connection connection, String eSql) {
+    private void setTotalRecord(Map<String,Object> paramsObj, MappedStatement mappedStatement, Connection connection, String eSql) {
         BoundSql boundSql = mappedStatement.getBoundSql(paramsObj);
 //        String sql = boundSql.getSql();
         String countSql = "select count(1) from (" + eSql + ") as total";
         List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
-//        BoundSql countBoundSql = new BoundSql(mappedStatement.getConfiguration(), countSql, parameterMappings, page.getParams());
+//        BoundSql countBoundSql = new BoundSql(mappedStatement.getConfiguration(), countSql, parameterMappings, paramsObj.get("page"));
         BoundSql countBoundSql = new BoundSql(mappedStatement.getConfiguration(), countSql, parameterMappings, paramsObj);
+        parameterMappings.forEach((mapping)->{
+            String prop = mapping.getProperty();
+            if(boundSql.hasAdditionalParameter(prop)) countBoundSql.setAdditionalParameter(prop,boundSql.getAdditionalParameter(prop));
+        });
         ParameterHandler parameterHandler = new DefaultParameterHandler(mappedStatement, paramsObj, countBoundSql);
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -267,14 +304,14 @@ public class PageInterceptor implements Interceptor {
         Constants.ReflectUtil.setFieldValue(boundSql, "sql", sql);
     }
 
-    public String processStr(String str,String prefix) {
-        return prefix + str.replace(Table.SEPARATE_SPLIT,  Table.SEPARATE_SPLIT+prefix);
+    public String processStr(String str, String prefix) {
+        return prefix + str.replace(Table.SEPARATE_SPLIT, Table.SEPARATE_SPLIT + prefix);
     }
 
     public String processS(String str, String prefix, String suffix) {
 //        return prefix + str.replace(Table.SEPARATE_SPLIT, suffix + Table.SEPARATE_SPLIT + prefix) + suffix;
 //        return prefix + str.replaceAll("(\\w+),", prefix.replace(".","_")+"$1," + prefix);
-        return str.replaceAll("([A-Z_]+)\\s(\\w+)", prefix+"$1 " + prefix.replace(".","_")+"$2");
+        return str.replaceAll("([A-Z_]+)\\s(\\w+)", prefix + "$1 " + prefix.replace(".", "_") + "$2");
     }
 
 }

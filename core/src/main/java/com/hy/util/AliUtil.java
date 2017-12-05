@@ -9,6 +9,8 @@ import com.aliyuncs.profile.DefaultProfile;
 import com.aliyuncs.profile.IClientProfile;
 import com.hy.core.ParamsMap;
 import com.hy.vo.RemoteProtocol;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,11 +21,14 @@ public class AliUtil {
     //产品域名,开发者无需替换
     static final String sms_domain = "dysmsapi.aliyuncs.com";
     // TODO 此处需要替换成开发者自己的AK(在阿里云访问控制台寻找)
-    static final String sms_accessKeyId = "LTAI8pLhnh0Dhs2H";
+    static final String sms_accessKeyId = "LTAIrHvaUqkjhkJE";
+//    static final String sms_accessKeyId = "LTAI8pLhnh0Dhs2H";
     //    static final String accessKeyId = "yourAccessKeyId";
-    static final String sms_accessKeySecret = "BdlXgP3nmvQX7t3tsCogYNmCfKpx2F";
+//    static final String sms_accessKeySecret = "BdlXgP3nmvQX7t3tsCogYNmCfKpx2F";
+    static final String sms_accessKeySecret = "ux2EMnN3jx6Whb0tZWxoycNqIQMLY5";
     static final String signName = "融宝";
     static final String cert_APPCODE = "";
+    private static final Logger logger = LogManager.getLogger(AliUtil.class);
 
     public static SendSmsResponse sendSms(Map<String,Object> smsTemplate, String phone, String outParam) throws ClientException {
         //可自助调整超时时间
@@ -48,7 +53,13 @@ public class AliUtil {
         //可选:outId为提供给业务方扩展字段,最终在短信回执消息中将此值带回给调用者
         request.setOutId(outParam);
         //hint 此处可能会抛出异常，注意catch
-        SendSmsResponse sendSmsResponse = acsClient.getAcsResponse(request);
+        SendSmsResponse sendSmsResponse=null;
+        try {
+            sendSmsResponse = acsClient.getAcsResponse(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("==================阿里云短信接口返回错误......");
+        }
         return sendSmsResponse;
     }
 

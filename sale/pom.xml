@@ -126,7 +126,7 @@
                             </outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>E:/IdeaProjects/fq/core/libs</directory>
+                                    <directory>D:/workspace/fq/core/libs</directory>
                                 </resource>
                             </resources>
                         </configuration>

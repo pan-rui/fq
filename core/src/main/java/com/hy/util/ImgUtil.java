@@ -18,6 +18,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ImgUtil {
 	
@@ -30,12 +32,36 @@ public class ImgUtil {
 	public static final String SALE_IMG_PATH = "sale/img/";
 
 	public static final String USER_CERT_PATH = "user/cert/";
+	public static final String PRODUCT_PATH = "product/";
+	public static final String DISCUSS_PATH = "discuss/";
+	public static final String AFTERMARKET_PATH = "aftermarket/";
+	public static final String BRAND_PATH = "brand/";
+	public static final String CLASSIFY_PATH = "brand/";
+	public static final String PHOTO_PATH = "photo/";
+	public static final String BANK_PATH = "bankIcon/";
 
 	public static final String APK_PATH = "apk/";
+	public static final String JT_FTP_PATH = "/wdpt/hy/cert/";
 
 	public static final String ACCEPTANCE_PERIOD_IMG_PATH = "acceptance/img/period/";
 
 	public static final String TEMP_APK_PATH = "temp/apk/";
+
+	public static final Map<String, String> pathMap = new HashMap<>();
+	static {
+		pathMap.put("0", USER_CERT_PATH);
+		pathMap.put("1",USER_CERT_PATH);
+		pathMap.put("2", BANK_PATH);
+		pathMap.put("3", TEMP_PATH);
+		pathMap.put("4", APK_PATH);
+		pathMap.put("5", DISCUSS_PATH);
+		pathMap.put("6", AFTERMARKET_PATH);
+		pathMap.put("7", PRODUCT_PATH);
+		pathMap.put("8", BRAND_PATH);
+		pathMap.put("9",USER_CERT_PATH );
+		pathMap.put("a", CLASSIFY_PATH);
+		pathMap.put("b", PHOTO_PATH);
+	}
 
 	//一户一档隐蔽照片在户下还多一层级
 	public static final String HIDDEEN_ACCEPTANCE_IMG_PATH = "/hidden";

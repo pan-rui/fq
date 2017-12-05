@@ -12,13 +12,33 @@ http://www.springframework.org/schema/task/spring-task-3.1.xsd">
     <!--<import resource="classpath*:common.xml"/>-->
     <import resource="classpath*:spring-shiro.xml"/>
 
+<!--    <bean id="simpleThreadPoolTaskExecutor" class="org.springframework.scheduling.quartz.SimpleThreadPoolTaskExecutor">
+        <property name="makeThreadsDaemons" value="true"/>
+        <property name="threadCount" value="15" />
+        <property name="threadNamePrefix" value="stTask_"/>
+        <property name="waitForJobsToCompleteOnShutdown" value="true" />
+    </bean>-->
+<!--    <bean id="threadPoolTaskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="2" />
+        <property name="keepAliveSeconds" value="200" />
+        <property name="maxPoolSize" value="10" />
+        <property name="queueCapacity" value="60" />
+        <property name="daemon" value="true"/>
+    </bean>-->
+    <bean id="taskScheduler" class="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler">
+        <property name="daemon" value="true"/>
+        <property name="poolSize" value="15"/>
+        <property name="threadNamePrefix" value="schedu_"/>
+        <property name="waitForTasksToCompleteOnShutdown" value="true"/>
+    </bean>
    <!--定时器 -->
-    <task:executor id="executor" pool-size="5" />
-    <task:scheduler id="scheduler" pool-size="10" />
+    <task:executor id="executor" pool-size="5"/>
+    <task:scheduler id="scheduler" pool-size="15" />
     <task:annotation-driven executor="executor" scheduler="scheduler" />
-<!--    <task:scheduled-tasks>
-        <task:scheduled ref="offlineDataTask" method="loadOfflineData" cron="0 0 2 * * *"/>
-    </task:scheduled-tasks>-->
-
+    <!--<task:annotation-driven executor="simpleThreadPoolTaskExecutor" scheduler="taskScheduler" proxy-target-class="true" />-->
+    <task:scheduled-tasks scheduler="taskScheduler">
+        <task:scheduled ref="rePayRemind" method="repayMind" cron="0 0 10 * * *"/>
+        <task:scheduled ref="couponExpireRemind" method="useMind" cron="0 30 10 * * *"/>
+    </task:scheduled-tasks>
     <!--<cache:annotation-driven proxy-target-class="true" cache-manager="cacheManager"/>-->
 </beans>

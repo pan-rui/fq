@@ -2,7 +2,9 @@ package com.hy.vo;
 
 import com.hy.core.ParamsMap;
 import org.springframework.http.HttpMethod;
+import org.springframework.util.CollectionUtils;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -17,8 +19,9 @@ import java.util.Map;
  */
 public enum RemoteProtocol implements Protocol {
     CERT("http://jisubank4.market.alicloudapi.com/bankcardverify4/verify?bankcard=6228480402564881235&idcard=410184198501181235&mobile=13333333333&realname=xxfd", FORM, HttpMethod.GET,ParamsMap.newMap("Authorization","APPCODE 2c32413199c24e43a9dd72ecd3e271d8"))
+    , SHIPMENTS("http://poll.kuaidi100.com/poll", FORM, HttpMethod.POST,null, ParamsMap.newMap("schema", "").addParams("param", ""))
     ,CHECKWORK("http://116.7.226.222:10001/weChat/getCheckWork",FORM, HttpMethod.POST,ParamsMap.newMap("openId","").addParams("ddBB","").addParams("tenantId","").addParams("month","").addParams("projectCode",""))
-    , DOWNIMG("http://116.7.226.222:10001/weChat/downImg", FORM, HttpMethod.POST,new LinkedHashMap(), ParamsMap.newMap("openId", "").addParams("ddBB", "").addParams("tenantId", "").addParams("projectCode", "").addParams("serverId", "").addParams("isFront", "").addParams("accToken", ""));
+    , DOWNIMG("http://116.7.226.222:10001/weChat/downImg", FORM, HttpMethod.POST,null, ParamsMap.newMap("openId", "").addParams("ddBB", "").addParams("tenantId", "").addParams("projectCode", "").addParams("serverId", "").addParams("isFront", "").addParams("accToken", ""));
     private String url;
     private String contentType;
     private HttpMethod method;
@@ -70,6 +73,6 @@ public enum RemoteProtocol implements Protocol {
 
     @Override
     public Map<String, Object> getHeads() {
-        return this.heards;
+        return CollectionUtils.isEmpty(this.heards)?new HashMap():this.heards;
     }
 }

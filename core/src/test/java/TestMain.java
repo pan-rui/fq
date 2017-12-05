@@ -4,26 +4,48 @@ import com.hy.core.ColumnProcess;
 import com.hy.core.ParamsMap;
 import com.hy.core.Table;
 import com.hy.dao.BaseDao;
+import com.hy.task.OrderPayJob;
+import com.hy.util.TriggerUtil;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.authc.credential.SimpleCredentialsMatcher;
+import org.quartz.Job;
+import org.quartz.JobBuilder;
+import org.quartz.JobDataMap;
+import org.quartz.JobDetail;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.SimpleTrigger;
+import org.quartz.TriggerBuilder;
+import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -175,12 +197,79 @@ public class TestMain {
         )));
         System.out.println(JSON.toJSONString(ParamsMap.newMap("button", menuList)));PRODUCT_ATTRIBUTE
     }*/
-public static void main(String[] args) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchFieldException {
+public static void main8(String[] args) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchFieldException {
     String v1 = "hy_V2.3.2";
     String v2 = "hy_V1.4.2";
     System.out.println("v1  大于 v2  : "+(v1.compareTo(v2)>0));
     System.out.println(ColumnProcess.decryptVal("pr_bizerId"));
+    int a=1;
+    System.out.println(Integer.parseInt(String.valueOf(1))==1);
+    System.out.println(gg("update fdsdgdfg set fdfd=235353,sdf=w3t,ete=24324,23=234", 4));
 //    System.out.println(Class.forName("com.hy.core.Table$User").getField("BIZER_ID"));
 //    System.out.println(Enum.valueOf(Class.forName("com.hy.core.Table$User",false,Enum.class.getClassLoader()), "BIZER_ID").toString());
+    Pattern pattern = Pattern.compile("^update.+Pros(\\d)?\\w*");
+    Matcher matcher=pattern.matcher("updatefsdteProsByds");
+    if (matcher.find()) {
+        System.out.println(StringUtils.isEmpty(matcher.group(1)));
+    }
+    Map map = ParamsMap.newMap("fdfd", "fd");
+    Long ll = (Long) map.get("fdfsse");
+    System.out.println(ll);
+    int aa=1;
+    if (aa >1) {
+        System.out.println(">2");
+    } else if (aa > 2) {
+        System.out.println(">3");
+    }else{
+        System.out.println("other");
+    }
+    System.out.println(Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
+    System.out.println(new SimpleDateFormat("yyyy-MM-dd").format(new Calendar.Builder().setDate(2017,12-1,Calendar.getInstance().get(Calendar.DAY_OF_MONTH)).build().getTime()));
+    BigDecimal bigDecimal = new BigDecimal("23.23564");
+    System.out.println(String.valueOf(bigDecimal));
+    System.out.println(bigDecimal.toString().compareTo("23.235639"));
+    System.out.println(bigDecimal.divide(new BigDecimal("3"),4, BigDecimal.ROUND_HALF_UP).toString());
+//    Calendar calendar=Calendar.getInstance(TimeZone.getDefault().getDisplayName(Locale.getDefault()));
 }
+
+    public static String gg(String sql,int size) {
+        String inte =",";
+        String[] sqlArr = sql.split(inte);
+        StringBuffer sqlSB = new StringBuffer();
+        int tok=sqlArr.length-size-1;
+        for(int i=0;i<sqlArr.length;i++) {
+            if(i<tok)
+                sqlSB.append(sqlArr[i]).append(inte);
+            else if (i == tok) {
+                sqlSB.append(sqlArr[i]).append(" where ");
+            }else if(i==sqlArr.length-1){
+                sqlSB.append(sqlArr[i]);
+            }else{
+                sqlSB.append(sqlArr[i]).append(" and ");
+            }
+        }
+        return sqlSB.toString();
+    }
+
+    public static void main(String[] args) throws Exception {
+        Object obj=Class.forName("ZhptDes").newInstance();
+/*        for (Method method : obj.getClass().getMethods()) {
+            System.out.println("----------------------------------------------");
+            System.out.println(method.getName());
+            for (Class cla : method.getParameterTypes()) {
+                System.out.println(cla.getName());
+            }
+        }*/
+        Method method = obj.getClass().getMethod("JtDes", int.class, String.class, String.class);
+        System.out.println(method.invoke(obj, 1, "thKjfwFEnBQliQAK", "B1F1B0664DA36784D97810A54639A021E073A75EA27CED739EA3B7FB4ADDD893"));
+        Map map=ParamsMap.newMap("1", true);
+        System.out.println((map.get("1")));
+        System.out.println(String.valueOf(Integer.parseInt("23")));
+        System.out.println(String.valueOf(Double.parseDouble("23.254")));
+        System.out.println(String.format("001","%d"));
+        System.out.println("1.01".replace(".","").replaceFirst("^(0+)",""));
+        System.out.println(new BigDecimal("0.01").multiply(new BigDecimal(100)).intValue());
+        System.out.println(Locale.getDefault());
+    }
+
 }

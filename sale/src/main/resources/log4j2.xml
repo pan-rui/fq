@@ -2,7 +2,7 @@
 <!-- status=debug 可以查看log4j的装配过程 -->
 <Configuration status="warn" monitorInterval="10">
     <Properties>
-        <property name="LOG_HOME">/home/logs/tomcat/</property>
+        <property name="LOG_HOME">/var/logs/tomcat/</property>
         <!--<property name="LOG_HOME">${web:rootDir}/</property>-->
         <!-- 日志备份目录 -->
         <property name="BACKUP_HOME">${LOG_HOME}/backup</property>
@@ -16,7 +16,7 @@
         </Console>
         <!-- 程序员调试日志 -->
         <RollingRandomAccessFile name="INFO" fileName="${LOG_HOME}/logs/info.log"
-                                 filePattern="${LOG_HOME}/logs/info-%d{yyyy-MM-dd}_%i.log" immediateFlush="false">
+                                 filePattern="${LOG_HOME}/logs/$${date:yyyy-MM}/info_%d{MM-dd-yyyy}_%i.log.gz" immediateFlush="false">
             <PatternLayout pattern="%date{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread][%file:%line] - %msg%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy interval="24" modulate="true"/>
@@ -27,7 +27,7 @@
         <!-- 游戏产品数据分析日志 -->
         <RollingRandomAccessFile name="WARN"
                                  fileName="${LOG_HOME}/logs/warn.log"
-                                 filePattern="${LOG_HOME}/logs/warn-%d{yyyy-MM-dd}_%i.log">
+                                 filePattern="${LOG_HOME}/logs/$${date:yyyy-MM}/warn_%d{MM-dd-yyyy}_%i.log.gz">
             <PatternLayout
                     pattern="%date{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread][%file:%line] - %msg%n"/>
             <Policies>

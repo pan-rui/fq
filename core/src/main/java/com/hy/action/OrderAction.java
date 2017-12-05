@@ -1,42 +1,40 @@
 package com.hy.action;
 
 import com.alibaba.fastjson.JSON;
-import com.google.gson.JsonObject;
 import com.hy.annotation.EncryptProcess;
 import com.hy.base.BaseResult;
 import com.hy.base.ReturnCode;
-import com.hy.core.CacheKey;
-import com.hy.core.ColumnProcess;
 import com.hy.core.Constants;
 import com.hy.core.Page;
 import com.hy.core.ParamsMap;
 import com.hy.core.Table;
 import com.hy.dao.BaseDao;
-import com.hy.dao.ProductDao;
+import com.hy.dao.UserDao;
+import com.hy.service.CommonService;
 import com.hy.service.OrderService;
-import com.hy.task.OrderPayJob;
-import com.hy.util.JPushUtil;
-import com.hy.util.TriggerUtil;
+import com.hy.service.pay.Pay;
+import com.hy.util.JuheUtil;
 import com.hy.vo.ParamsVo;
-import org.apache.commons.lang.NumberUtils;
+import com.hy.vo.RemoteProtocol;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.shiro.util.Assert;
-import org.quartz.JobDataMap;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.async.WebAsyncTask;
 
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -47,59 +45,21 @@ public class OrderAction extends BaseAction {
     @Autowired
     private BaseDao baseDao;
     @Autowired
-    private ProductDao productDao;
+    private UserDao userDao;
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private CommonService commonService;
+    @Autowired
+    @Value("#{config['SHIPMENTS_KEY']}")
+    private String SHIPMENTS_KEY;
+    private static final String orderCancelRemind = "ORDER_CANCEL_REMIND";
     private static final Logger logger = LogManager.getLogger(OrderAction.class);
     private String tableName = Table.FQ + Table.ORDER;
-    private static final String orderPayRemind = "ORDER_PAY_REMIND";
+
     @PostMapping("/add")
-    public BaseResult addOrder(HttpServletRequest request,@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess ParamsVo paramsVo) {
-        ParamsMap<String,Object> order=paramsVo.getParams();
-        int uId = (int) order.get(Table.USER_ID);
-        List<Map<String,Object>> countList=baseDao.queryByS("select count(1) cou from fq.ORDER where USER_ID="+uId+" and STATE='0'");
-        if(!CollectionUtils.isEmpty(countList) && Integer.parseInt(String.valueOf(countList.get(0).get("cou")))>=3)
-            return new BaseResult(ReturnCode.ORDER_LIMIT_SIZE);
-        String orderNo = sdf.format(new Date());
-        order.addParams(Table.Order.ORDER_NO.name(), orderNo);
-        order.addParams(Table.Order.USER_ID.name(),uId );
-        order.addParams(Table.Order.STATE.name(), "0");
-        order.addParams(Table.Order.REQ_IP.name(), getIpAddr(request));
-        Map<String,Object> attr= (Map<String, Object>) order.get(Table.Order.ATTR.name());
-        order.addParams(Table.Order.ATTR.name(), JSON.toJSONString(attr));
-        Map<String,Object> period= (Map<String, Object>) order.get(Table.Order.PERIOD.name());
-        order.addParams(Table.Order.PERIOD.name(), JSON.toJSONString(period));
-        order.addParams(Table.Order.UP_ID.name(), userId);
-//        order.addParams(Table.Order.ITEMS.name(),JSON.toJSONString(ParamsMap.newMap("id",)))
-        BigDecimal orderMoney = new BigDecimal((String) order.get(Table.Order.MONEY.name()));
-        Double DISCOUNT = (Double) order.get(Table.Order.DISCOUNT.name());      //折扣
-        if (DISCOUNT!=null && DISCOUNT > 0) {
-           BigDecimal  PREFERENTIAL=orderMoney.multiply(new BigDecimal(1.0 - DISCOUNT));            //优惠金额
-            orderMoney=orderMoney.subtract(PREFERENTIAL);               //总额-优惠金额
-            order.addParams(Table.Order.PREFERENTIAL.name(), PREFERENTIAL.setScale(2,BigDecimal.ROUND_HALF_UP).doubleValue());
-        }
-        if(false) {     //使用积分抵扣
-            Map<String,Object> account= (Map<String, Object>) baseDao.queryByProsInTab(Table.FQ + Table.ACCOUNT, ParamsMap.newMap(Table.Account.USER_ID.name(), userId)).get(0);
-            double nn=1.0;      //积分兑换比例
-            BigDecimal SCORE_MONEY=((BigDecimal) account.get(Table.Account.SCORE_BALANCE.name())).multiply(new BigDecimal(nn));
-            orderMoney = orderMoney.subtract(SCORE_MONEY);      //总额-积分抵扣
-            order.addParams(Table.Order.SCORE_MONEY.name(), SCORE_MONEY.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
-        }
-        order.addParams(Table.Order.ORDER_MONEY.name(), orderMoney.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
-        //首付=总额 * 首付比例 + 产品险 + 手续费
-        BigDecimal payMoney = orderMoney.multiply(new BigDecimal(String.valueOf(period.get("FIRST_PAY_RATIO")))).add(new BigDecimal(String.valueOf(period.get("INSURE")))).add(new BigDecimal(String.valueOf(period.get("FEE"))));
-        order.addParams(Table.Order.PAY_MONEY.name(), payMoney.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());        //首付
-        //月供=（总额 - 首付）/期数 +（总额 - 首付）* 月利率
-        BigDecimal remain=orderMoney.subtract(payMoney);
-        BigDecimal MONTHLY = remain.divide(new BigDecimal(String.valueOf(period.get("PERIOD"))),2,BigDecimal.ROUND_HALF_UP).add(remain.multiply(new BigDecimal(String.valueOf(period.get("RATE")))));
-        order.addParams(Table.Order.MONTHLY.name(), MONTHLY.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());       //月供
-        int count=baseDao.insertByProsInTab(tableName, order);
-        if(count>0){            //付款通知
-            String delay=Constants.getSystemStringValue(orderPayRemind);
-            Date date=new Date(System.currentTimeMillis()+ (StringUtils.isEmpty(delay)?7200000L:Integer.parseInt(delay)));
-            TriggerUtil.simpleTask(new JobDataMap(ParamsMap.newMap("dao",baseDao).addParams("orderId",order.get("id")).addParams("userId",uId)), OrderPayJob.class,date);
-        }
-        return count>0?new BaseResult(ReturnCode.OK, ColumnProcess.encryMap(order)):new BaseResult(ReturnCode.FAIL);
+    public BaseResult addOrder(HttpServletRequest request, @RequestHeader(Constants.USER_ID) String uId, @RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess ParamsVo paramsVo) {
+        return orderService.addOrder(uId,getIpAddr(request),paramsVo);
     }
 
     @GetMapping("id")
@@ -115,76 +75,205 @@ public class OrderAction extends BaseAction {
 
     @PostMapping("pay")
     public BaseResult payOrder(@RequestHeader(Constants.USER_ID) String uId, @RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess ParamsVo paramsVo) {
-            Map<String,Object> orderMap=baseDao.queryByIdInTab(Table.FQ+Table.ORDER,paramsVo.getId());
-        Assert.notNull(orderMap,"无此订单。");
-        BaseResult baseResult=orderService.pay(orderMap);
-        if (baseResult.getCode() == 0) {
-            Map<String, Object> periodMap = JSON.parseObject((String) orderMap.get("period")) ;
-            Long userId = (Long) orderMap.get("userId");
-            int period= (int) periodMap.get("PERIOD");
-            Calendar calendar=Calendar.getInstance();
-            List<Map<String, Object>> srcList = new ArrayList<>();
-            String repayDate = Constants.getSystemStringValue("REPAY_DATE");
-            if(!StringUtils.isEmpty(repayDate)&&!"0".equals(repayDate.trim())&& NumberUtils.isNumber(repayDate))
-                calendar.set(Calendar.DAY_OF_MONTH,Integer.parseInt(repayDate));
-            for(int i=1;i<=period;i++) {
-                calendar.add(Calendar.MONTH,1);
-                ParamsMap planRepayMap = ParamsMap.newMap(Table.PlanRepayment.USER_ID.name(), uId)
-                        .addParams(Table.PlanRepayment.ORDER_ID.name(), orderMap.get("id"))
-                        .addParams(Table.PlanRepayment.PLANREPAY_DATE.name(), calendar.getTime())
-                        .addParams(Table.PlanRepayment.PLANREPAY_MONEY.name(), orderMap.get("monthly"))
-                        .addParams(Table.PlanRepayment.REPAY_NUM.name(), i)
-                        .addParams(Table.PlanRepayment.STATUS.name(), "0")      //0未还
-                        .addParams(Table.PlanRepayment.UP_ID.name(), uId);
-                srcList.add(planRepayMap);
-            }
-            int count=baseDao.insertBatchByProsInTab(Table.FQ + Table.PLAN_REPAYMENT, srcList);
-            if(count<period)
-                    logger.error("ERROR:还款计划生成有误。。。。");
-            String items = (String) orderMap.get("items");
-            try {
-                List<Map> itemList =JSON.parseArray(items,Map.class);
-                for (Map itMap : itemList) {
-                    //TODO:销量
-                    Long productId = (Long) itMap.get("id");
-                    Long storeId = (Long) itMap.get("storeId");
-                    Map<String, Object> productMap = baseDao.queryByIdInTab(Table.FQ + Table.PRODUCT, productId);
-                    String attJson = JSON.toJSONString(mergeData(JSON.parseArray((String) productMap.get("attJson"), Map.class), itMap, "attr", "attGroup"));
-                    productDao.incrSales((int) itMap.get("size"), attJson, productId, storeId);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.error("支付销量更新异常:"+items, e);
-            }
-            String appMeta=Constants.hgetCache(CacheKey.APP_META_Prefix,JPushUtil.USER_APP+userId);
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("orderId", (Long) paramsVo.getId());
-            JPushUtil.pushByRegId(JPushUtil.USER_APP,"您刚才支付了一笔订单,金额为:"+orderMap.get("payMoney"),"如有疑问请联系客服.点击查看详情:",jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]);        //TODO:AppMeta
+        String payType = String.valueOf(paramsVo.getParams().remove(Table.Order.PAY_TYPE.name()));
+        String bankCardNo = (String) paramsVo.getParams().remove("BANK_CARD_NO");
+        List<Map<String, Object>> orderList = baseDao.queryByProsInTab(Table.FQ + Table.ORDER, paramsVo.getParams());
+        Assert.notEmpty(orderList, "无此订单。");
+        Map<String, Object> params = orderList.get(0);
+        params.put("bankCardNo", bankCardNo);
+        BaseResult baseResult = orderService.pay(payType, params);
+/*        if (baseResult.getCode() == 0) {
+
+*//*            String appMeta=Constants.hgetCache(CacheKey.APP_META,JPushUtil.USER_APP+userId);
+            if(!StringUtils.isEmpty(appMeta)) {
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.addProperty("orderId", (Number)paramsVo.getId());
+                JPushUtil.pushByRegId(JPushUtil.USER_APP, "您刚才支付了一笔订单,金额为:" + orderMap.get("payMoney"), "如有疑问请联系客服.点击查看详情:", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]);        //TODO:AppMeta
+            }*//*
             return baseResult;
-        }else
+        } else*/
         return baseResult;
     }
 
-    public static List<Map> mergeData(final List<Map> dataList,Map<String,Object> dataMap,String diffMapField,String diffListField){
-        Map<String,Object> attG= (Map<String, Object>) dataMap.get(diffMapField);
-        a:for (Map<String, Object> map : dataList) {
-            Map<String, Object> att = (Map<String, Object>) map.get(diffListField);
-            int i=0;
-            if (attG.size() == att.size()) {
-                b:for (String key : att.keySet()) {
-                    if(!attG.containsKey(key)||!attG.get(key).equals(att.get(key))){
-                        break b;
+    @PostMapping("aliPayNotify")
+    public BaseResult aliPayNotify(@RequestBody ParamsVo paramsVo) {
+        BaseResult baseResult = Pay.checkResult(paramsVo.getParams().addParams("payType", "aliPay"));
+        if (baseResult.getCode() == 0) {
+            boolean flag = true;
+            String trade_status = (String) paramsVo.getParams().get("trade_status");
+            String out_trade_no = (String) paramsVo.getParams().remove("out_trade_no");
+            if (trade_status.equals("TRADE_FINISHED")) {
+                logger.info("交易完结........订单号为:" + out_trade_no);
+            } else if (trade_status.equals("TRADE_SUCCESS")) {
+                //判断该笔订单是否在商户网站中已经做过处理
+                //如果没有做过处理，根据订单号（out_trade_no）在商户网站的订单系统中查到该笔订单的详细，并执行商户的业务程序
+                //请务必判断请求时的total_fee、seller_id与通知时获取的total_fee、seller_id为一致的
+                //如果有做过处理，不执行商户的业务程序
+                //注意：
+                //付款完成后，支付宝系统发送该交易状态通知
+/*                Order order = new Order();
+                order.setId(Long.parseLong(out_trade_no));
+                order.setPayNum(trade_no);
+                order.setPayInfo(JSON.toJSONString(params));
+                order.setPayMoney(Double.parseDouble(params.get("total_fee")));
+                order.setState("1");
+                order.setUtime(new Date());*/
+//                orderService.updatePayOrder(ParamsMap.newMap("id", Long.parseLong(out_trade_no)).addParams("payNum", trade_no).addParams("payInfo", JSON.toJSONString(params)).addParams("payMoney", Double.parseDouble(params.get("total_fee"))).addParams("state", "1"));
+//                String[] bodyArr = ((String) paramsVo.getParams().remove("body")).split(Table.SEPARATE_SPLIT);
+                String payTime = (String) paramsVo.getParams().get("gmt_payment");
+                String amount = (String) paramsVo.getParams().get("total_amount");
+                String trade_no = (String) paramsVo.getParams().remove("trade_no");
+                flag = commonService.paySuccessCallBack(paramsVo.getParams(), out_trade_no, trade_no, payTime, "body", amount, "0");
+   /*             DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                def.setPropagationBehavior(DefaultTransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                TransactionStatus transStatus = transactionManager.getTransaction(def);
+                try {
+                    transactionManager.commit(transStatus);
+                    if (IPaymentService.TradeType.firstPay.name().equals(tradeType)) {
+                        //更新订单信息及相关信息
+                        //保存交易记录
+                        ParamsMap paramsMap = ParamsMap.newMap(Table.Order.STATE.name(), "1").addParams(Table.Order.PAY_TIME.name(), payTime).addParams(Table.Order.PAY_NO.name(), trade_no);
+                        baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1])
+                                .addParams(Table.TradeRecord.PAY_TYPE.name(), "0").addParams(Table.TradeRecord.ORDER_NO.name(), out_trade_no).addParams(Table.TradeRecord.TRADE_NO.name(), trade_no).addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(paramsVo.getParams())));
+                        baseDao.updateByProsInTab(Table.FQ + Table.ORDER, paramsMap.addParams(Table.ID, bodyArr[2]));
+                        flag = orderService.genPlanRepay(baseDao.queryByIdInTab(Table.FQ + Table.ORDER, bodyArr[2]));
+                    } else if (IPaymentService.TradeType.repay.name().equals(tradeType)) {
+                        baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1])
+                                .addParams(Table.TradeRecord.PAY_TYPE.name(), "0").addParams(Table.TradeRecord.BILL_DATE.name(), bodyArr[2]).addParams(Table.TradeRecord.ORDER_NO.name(), out_trade_no).addParams(Table.TradeRecord.TRADE_NO.name(), trade_no)
+                                .addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(paramsVo.getParams())));
+                        Map<String, Object> repayMap = baseDao.queryByIdInTab(Table.FQ + Table.PLAN_REPAYMENT, bodyArr[2]);
+                        long diffSecond = System.currentTimeMillis() - ((Date) repayMap.get("planrepayDate")).getTime();
+                        baseDao.updateByProsInTab(Table.FQ + Table.PLAN_REPAYMENT, ParamsMap.newMap(Table.PlanRepayment.STATUS.name(), diffSecond > 0 ? "1" : "2").addParams(Table.PlanRepayment.PAY_DATE, new Date()).addParams(Table.ID, bodyArr[2]));
+                        String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.USER_APP + bodyArr[1]);
+                        if (repayMap.get("periodSum") == repayMap.get("repayNum")) {
+                            Long orderId = (Long) repayMap.get("orderId");
+                            baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "10").addParams(Table.ID, orderId));           //更新订单状态
+                            if (!StringUtils.isEmpty(appMeta)) {
+                                new Thread(() -> {
+                                    JsonObject jsonObject = new JsonObject();
+                                    jsonObject.addProperty("orderId", orderId);
+                                    JPushUtil.pushByRegId(JPushUtil.USER_APP, "您有一笔融宝分期订单已全部还款完成.", "点击查看详情!", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]);
+                                }).start();
+                            }
+                        }
+                        if (!StringUtils.isEmpty(appMeta)) {
+                            Calendar calendar = Calendar.getInstance();
+                            JsonObject jsonObject = new JsonObject();
+                            jsonObject.addProperty("repayId", bodyArr[2]);
+                            JPushUtil.pushByRegId(JPushUtil.USER_APP, "您" + calendar.get(Calendar.MONTH) + "月账单" + repayMap.get("planrepayMoney") + "元已还清!", "点击查看详情:", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]);   //TODO:AppMeta
+                        }
+
+                    } else if (IPaymentService.TradeType.freeRepay.name().equals(tradeType)) {
+                        Calendar calendar = Calendar.getInstance();
+                        String[] dateArr = bodyArr[2].split(Table.SEPARATE_CACHE);
+                        baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), "freeRepay").addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1])
+                                .addParams(Table.TradeRecord.TRADE_AMOUNT, amount).addParams(Table.TradeRecord.PAY_TYPE.name(), "0")
+                                .addParams(Table.TradeRecord.BILL_DATE.name(), new Calendar.Builder().setDate(Integer.parseInt(dateArr[0]), Integer.parseInt(dateArr[1]) - 1, calendar.get(Calendar.DAY_OF_MONTH)).build().getTime())
+                                .addParams(Table.TradeRecord.ORDER_NO.name(), out_trade_no).addParams(Table.TradeRecord.TRADE_NO.name(), trade_no).addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(paramsVo.getParams())));
+                        List<Map<String, Object>> repayList = userDao.queryRepaysTab(bodyArr[1], bodyArr[2]);
+//                        Calendar calendar = Calendar.getInstance();
+                        BigDecimal money = new BigDecimal(amount);
+                        for (Map<String, Object> repayMap : repayList) {
+                            if (money.compareTo(BigDecimal.ZERO) <= 0) break;
+                            ParamsMap upMap = ParamsMap.newMap(Table.PlanRepayment.UTIME.name(), calendar.getTime()).addParams(Table.PlanRepayment.REPAY_TYPE.name(), "freeRepay");
+                            String status = (String) repayMap.get("status");
+                            if (status.equals("1") || status.equals("2"))
+                                continue;
+                            BigDecimal planrepayMoney = (BigDecimal) repayMap.get("planrepayMoney");
+                            BigDecimal realRepayMoney = (BigDecimal) repayMap.get("realRepayMoney");
+                            if (status.equals("0")) {       //未还
+                                BigDecimal syRepay = planrepayMoney.subtract(realRepayMoney);
+                                if (money.compareTo(syRepay) >= 0) {     //多于应还本金
+                                    upMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), planrepayMoney);
+                                    upMap.addParams(Table.PlanRepayment.STATUS.name(), "1");
+                                    money = money.subtract(syRepay);
+                                } else {
+                                    upMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), realRepayMoney.add(money));
+                                    money = BigDecimal.ZERO;
+                                }
+                            } else if (status.equals("3")) {       //逾期
+                                BigDecimal realRepayInterest = (BigDecimal) repayMap.get("realRepayInterest");
+                                BigDecimal overdue = (BigDecimal) repayMap.get("overdue");
+                                BigDecimal syRepayOve = overdue.subtract(realRepayInterest);
+                                BigDecimal syRepay = planrepayMoney.subtract(realRepayMoney);
+                                if (money.compareTo(syRepayOve) >= 0) {     //多于应还利息
+                                    upMap.addParams(Table.PlanRepayment.REAL_REPAY_INTEREST.name(), overdue);
+                                    money = money.subtract(syRepayOve);
+                                    if (money.compareTo(syRepay) >= 0) {     //多于应还本金
+                                        upMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), planrepayMoney);
+                                        upMap.addParams(Table.PlanRepayment.STATUS.name(), "1");
+                                        money = money.subtract(syRepay);
+                                    } else {
+                                        upMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), realRepayMoney.add(money));
+                                        money = BigDecimal.ZERO;
+                                    }
+                                } else {      //少于利息
+                                    upMap.addParams(Table.PlanRepayment.REAL_REPAY_INTEREST.name(), realRepayInterest.add(money));
+                                    money = BigDecimal.ZERO;
+                                }
+                            }
+                            baseDao.updateByProsInTab(Table.FQ + Table.PLAN_REPAYMENT, upMap.addParams(Table.ID, repayMap.get("id")));
+                        }
                     }
-                    i++;
-                }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    flag = false;
+                    transactionManager.rollback(transStatus);
+//                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                }*/
+                logger.info("支付成功........订单号为:" + out_trade_no);
+//                payedNotify(Constants.getSystemStringValue("Pay_Notify_Phone"),"支付宝",Double.parseDouble(params.get("total_fee")),out_trade_no);
             }
-            if(i==att.size()){
-                int size=Integer.parseInt(String.valueOf(dataMap.get("size")));
-                map.put("sole", (int)map.get("sold") +size );
-                map.put("stock", (int) map.get("stock") - size);
-            }
-        }
-        return dataList;
+            if (!flag) baseResult.setCode(1);
+        } else logger.error("订单支付验证失败异常...........");
+        return baseResult;
     }
 
+    /**
+     * 订单剩余付款时间
+     *
+     * @param uId
+     * @param ctime
+     * @return
+     */
+    @GetMapping("remainTime/{ctime:\\d+}")
+    public BaseResult remainPayTime(@RequestHeader(Constants.USER_ID) Long uId, @PathVariable Long ctime) {
+        String delay2 = Constants.getSystemStringValue(orderCancelRemind);
+        if (StringUtils.isEmpty(delay2)) delay2 = "0";
+        return new BaseResult(ReturnCode.OK, ctime + Long.parseLong(delay2) - System.currentTimeMillis());
+    }
+
+    /**
+     * 发货
+     *
+     * @param uId
+     * @param paramsVo
+     * @return
+     */
+    @PostMapping("shipments")
+    public WebAsyncTask<BaseResult> shipments(@RequestHeader(Constants.USER_ID) Long uId, @RequestBody ParamsVo paramsVo) {
+        List<Map<String, Object>> datas = paramsVo.getDatas();
+        return new WebAsyncTask<BaseResult>(3500L, () -> {
+            if (CollectionUtils.isEmpty(datas)) return new BaseResult(21111, "运单号码为空");
+            int[] count = new int[]{0};
+            datas.forEach((map) -> {
+                String number = String.valueOf(map.get("number"));
+                String logistics = (String) map.get("logistics");
+                String orderId = String.valueOf(map.get("orderId"));
+                Map param = ParamsMap.newMap("company", logistics).addParams("number", number).addParams("key", SHIPMENTS_KEY).addParams("parameters", ParamsMap.newMap("callbackurl", "http://58.61.142.74:1000/consumer/single/shipCall?orderId=" + orderId)).addParams("autoCom", "1").addParams("resultv2", "1");
+//                Map<String, Object> resultMap = JSON.parseObject(HttpUtil.execute(RemoteProtocol.SHIPMENTS, ParamsMap.newMap("schema", "json").addParams("param", JSON.toJSONString(param))), Map.class);
+                Map<String, Object> resultMap = null;
+                try {
+                    resultMap = JSON.parseObject(JuheUtil.net(RemoteProtocol.SHIPMENTS.getUrl(), ParamsMap.newMap("schema", "json").addParams("param", JSON.toJSONString(param)), HttpMethod.POST.name()), Map.class);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (!CollectionUtils.isEmpty(resultMap) && (Boolean) resultMap.get("result")) {
+                    count[0] += baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "2").addParams(Table.Order.LOGISTICS.name(), logistics).addParams(Table.Order.LOGISTICS_CODE.name(), number)
+                            .addParams(Table.Order.SHIPMENTS_TIME.name(), new Date()).addParams(Table.ID, orderId));
+                }
+            });
+            return count[0] == datas.size() ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL, count[0]);
+        });
+    }
 }
