@@ -105,7 +105,7 @@ public class UserAction extends BaseAction {
             if(!StringUtils.isEmpty(appMeta))
                 Constants.hsetCache(CacheKey.APP_META,"U_"+id,appMeta);
             if (StringUtils.isEmpty(user.get("openId"))&&!StringUtils.isEmpty(openId)) {            //公众号
-                baseDao.updateByProsInTab(Table.FQ + Table.USER, ParamsMap.newMap(Table.User.OPEN_ID.name(), openId).addParams(Table.ID,id).addParams(Table.UTIME,new Date()));
+                baseDao.updateByProsInTab(Table.FQ + Table.USER, ParamsMap.newMap(Table.User.OPEN_ID.name(), openId).addParams(Table.UTIME,new Date()).addParams(Table.ID,id));
             }
             if(TokenInterceptor.WeChat.equals(reqAppVer.split(Table.SEPARATE_CACHE)[1])){
                 Constants.hsetCache(CacheKey.WX_HEAD, Constants.USER_ID+openId,String.valueOf(id));

@@ -191,7 +191,7 @@ public class CommonAction extends BaseAction {
     }
 
     @GetMapping("updateApp")
-    public BaseResult updateApp(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.APP_VER) String appVer) {
+    public BaseResult updateApp(@RequestHeader(Constants.APP_VER) String appVer) {
         List<Map<String, Object>> resultList = baseDao.queryListInTab(Table.FQ + Table.APP_VESION, ParamsMap.newMap(Table.AppVesion.APP_TYPE.name(), "1").addParams(Table.AppVesion.IS_ENABLE.name(), 1), ParamsMap.newMap(Table.AppVesion.VERSION.name(), "DESC"));
         return new BaseResult(ReturnCode.OK, resultList.get(0));
     }

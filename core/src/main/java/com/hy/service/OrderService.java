@@ -264,12 +264,20 @@ public class OrderService {
             }
             orderMoney = orderMoney.add(productPrice);
             //首付=总额 * 首付比例 + 产品险 + 手续费
-            BigDecimal activityMoney= (BigDecimal) itMap.get("activityMoney");
+            BigDecimal activityMoney= (BigDecimal) itMap.get(IMarket.ACTIVITY_MONEY);
 //            BigDecimal payMoney = isActivity&&activityMoney!=null?activityMoney:productPrice.multiply(new BigDecimal(String.valueOf(periodMap.get("firstPayRatio")))).add(insureMoney).add(new BigDecimal(String.valueOf(periodMap.get("fee"))));
-            BigDecimal payMoney = productPrice.multiply(new BigDecimal(String.valueOf(periodMap.get("firstPayRatio")))).add(insureMoney).add(new BigDecimal(String.valueOf(periodMap.get("fee"))));     //商品首付
-            firstMoney = firstMoney.add(activityMoney!=null&&activityMoney.compareTo(payMoney)>0?activityMoney:payMoney);        //订单首付
+            BigDecimal firstPayRatio=new BigDecimal(String.valueOf(periodMap.get("firstPayRatio")));
+            BigDecimal payMoney = productPrice.multiply(firstPayRatio).add(insureMoney).add(new BigDecimal(String.valueOf(periodMap.get("fee"))));     //商品首付
+//            BigDecimal diffPay=activityMoney!=null&&activityMoney.compareTo(payMoney)>0?activityMoney:payMoney;
+            firstMoney = firstMoney.add(payMoney);        //订单首付
+            boolean affected=false;
+            if(activityMoney!=null){
+                firstMoney = firstMoney.add(activityMoney);
+                affected = (boolean) itMap.get(IMarket.AFFECTED_FIRST_PAY);
+            }
             //月供=（总额 - 首付）/期数 +（总额 - 首付）* 月利率
             BigDecimal remain = productPrice.subtract(payMoney);
+            if(affected) remain = remain.subtract(activityMoney);
             BigDecimal MONTHLY = remain.divide(new BigDecimal(String.valueOf(periodMap.get("period"))), 2, BigDecimal.ROUND_HALF_UP).add(remain.multiply(rateVal));
             itMap.put("monthly", MONTHLY.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());       //月供
 //            order.addParams(Table.Order.MONTHLY.name(), MONTHLY.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());       //月供
