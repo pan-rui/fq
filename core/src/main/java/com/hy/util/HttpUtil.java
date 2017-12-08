@@ -13,8 +13,11 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.entity.EntityBuilder;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLSocketFactory;
@@ -31,6 +34,7 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.util.EntityUtils;
 import org.springframework.http.HttpMethod;
+import org.springframework.util.CollectionUtils;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -142,17 +146,17 @@ public class HttpUtil {
         String resultData = "";
         try {
             String url = genGetURL(protocol.getUrl(), params);
-            HttpUriRequest request = new HttpGet(url);
+            HttpUriRequest request = getRequestForMethod(protocol.getMethod(), url);
             String contentType = protocol.getContentType();
-            if (protocol.getMethod() == HttpMethod.POST ) {
-                request = new HttpPost(url);
+            if (!org.springframework.util.CollectionUtils.isEmpty(protocol.getPostParams())|| !CollectionUtils.isEmpty(params) ) {
+//                request = new HttpPost(url);
                 if (contentType.equals(Protocol.TEXT) || contentType.equals(Protocol.FORM)) {
                     List<NameValuePair> nameValuePairs = new ArrayList<>();
                     params.forEach((k, v) -> nameValuePairs.add(new BasicNameValuePair(k, v.toString())));
 //                    ((HttpPost)request).setEntity(EntityBuilder.create().setParameters(nameValuePairs).setContentEncoding(IBase.DEF_CHATSET).build());
                     ((HttpPost) request).setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
                 } else if (contentType.equals(Protocol.JSON)) {
-                    ((HttpPost) request).setEntity(new StringEntity(JSON.toJSONString(ParamsMap.newMap("params", params)), IBase.DEF_CHATSET));
+                    ((HttpPost) request).setEntity(new StringEntity(JSON.toJSONString(params), IBase.DEF_CHATSET));
                 } else if (contentType.equals(Protocol.BYTE)) {
                     ((HttpPost) request).setEntity(EntityBuilder.create().setBinary((byte[]) params.get("byte")).build());
                 }
@@ -207,4 +211,19 @@ public class HttpUtil {
         return sb.toString();
     }
 
+    public static HttpUriRequest getRequestForMethod(HttpMethod method,String url) {
+        switch (method) {
+            case GET:
+                return new HttpGet(url);
+            case PUT:
+                return new HttpPut(url);
+            case POST:
+                return new HttpPost(url);
+            case PATCH:
+                return new HttpPatch(url);
+            case DELETE:
+                return new HttpDelete(url);
+        }
+        return null;
+    }
 }

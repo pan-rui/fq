@@ -15,9 +15,12 @@ import com.hy.dao.ProductDao;
 import com.hy.dao.UserDao;
 import com.hy.service.pay.IPaymentService;
 import com.hy.util.FtpUtil;
+import com.hy.util.HttpUtil;
 import com.hy.util.ImgUtil;
 import com.hy.util.JPushUtil;
 import com.hy.util.JTUtil;
+import com.hy.util.SendMail;
+import com.hy.vo.RemoteProtocol;
 import org.apache.commons.lang.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -44,6 +50,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class CommonService {
@@ -133,12 +140,14 @@ public class CommonService {
                 baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1])
                         .addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo).addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(params)));
                 baseDao.updateByProsInTab(Table.FQ + Table.ORDER, paramsMap.addParams(Table.ID, bodyArr[2]));
-                flag = genPlanRepay(baseDao.queryByIdInTab(Table.FQ + Table.ORDER, bodyArr[2]));
+                Map<String,Object> orderMap=baseDao.queryByIdInTab(Table.FQ + Table.ORDER, bodyArr[2]);
+                flag = genPlanRepay(orderMap);
                 Map<String, Object> userMap = baseDao.queryByIdInTab(userTable, bodyArr[1]);
                 Object inviterId=userMap.get("inviterId");
                 if (!StringUtils.isEmpty(inviterId)) {
                     baseDao.insertByProsInTab(Table.FQ + Table.COUPON, ParamsMap.newMap(Table.Coupon.STATUS.name(), "2").addParams(Table.Coupon.REMARK.name(), bodyArr[1]).addParams(Table.Coupon.COUPON_ID.name(), "7").addParams(Table.Coupon.USER_ID.name(), inviterId));
                 }
+                sendWxMsg(RemoteProtocol.PAY_SUCCESS_MSG, ParamsMap.newMap("amount", amount+"元").addParams("user", userMap).addParams("order", orderMap));
             } else if (IPaymentService.TradeType.repay.name().equals(tradeType)) {
                 baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1])
                         .addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.BILL_DATE.name(), bodyArr[2]).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo)
@@ -312,5 +321,23 @@ public class CommonService {
             }
         }
         return dataList;
+    }
+
+    public void sendWxMsg(RemoteProtocol protocol, Map<String, Object> params) {
+        Map<String, Object> userMap = (Map<String, Object>) params.get("user");
+        if (StringUtils.isEmpty(userMap.get("openId"))) {
+
+        }else {
+            BaseResult baseResult = JSON.parseObject(HttpUtil.execute(protocol, ParamsMap.newMap("params", params)), BaseResult.class);
+            if (baseResult.getCode() != 0) {
+                try {
+                    TimeUnit.MINUTES.sleep(5L);
+                    baseResult=JSON.parseObject(HttpUtil.execute(protocol, ParamsMap.newMap("params", params)),BaseResult.class);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            logger.info(baseResult.toString());
+        }
     }
 }

@@ -254,7 +254,7 @@ public class OrderService {
                             periodMap.put("exemptMon", exemptMon);
                         }
                         if(!StringUtils.isEmpty(giveMon)){
-                            itMap.put("remark", "赠送" + giveMon + "个月话费");
+                            itMap.put("remark", order.get("REMARK")+"(赠送" + giveMon + "个月话费)");
                         }
                         //使用
                         it.remove();
@@ -264,9 +264,10 @@ public class OrderService {
             }
             orderMoney = orderMoney.add(productPrice);
             //首付=总额 * 首付比例 + 产品险 + 手续费
-            BigDecimal activityMoney= (BigDecimal) itMap.get("payMoney");
-            BigDecimal payMoney = isActivity&&activityMoney!=null?activityMoney:productPrice.multiply(new BigDecimal(String.valueOf(periodMap.get("firstPayRatio")))).add(insureMoney).add(new BigDecimal(String.valueOf(periodMap.get("fee"))));
-            firstMoney = firstMoney.add(payMoney);
+            BigDecimal activityMoney= (BigDecimal) itMap.get("activityMoney");
+//            BigDecimal payMoney = isActivity&&activityMoney!=null?activityMoney:productPrice.multiply(new BigDecimal(String.valueOf(periodMap.get("firstPayRatio")))).add(insureMoney).add(new BigDecimal(String.valueOf(periodMap.get("fee"))));
+            BigDecimal payMoney = productPrice.multiply(new BigDecimal(String.valueOf(periodMap.get("firstPayRatio")))).add(insureMoney).add(new BigDecimal(String.valueOf(periodMap.get("fee"))));     //商品首付
+            firstMoney = firstMoney.add(activityMoney!=null&&activityMoney.compareTo(payMoney)>0?activityMoney:payMoney);        //订单首付
             //月供=（总额 - 首付）/期数 +（总额 - 首付）* 月利率
             BigDecimal remain = productPrice.subtract(payMoney);
             BigDecimal MONTHLY = remain.divide(new BigDecimal(String.valueOf(periodMap.get("period"))), 2, BigDecimal.ROUND_HALF_UP).add(remain.multiply(rateVal));

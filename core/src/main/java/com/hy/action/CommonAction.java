@@ -23,6 +23,7 @@ import com.hy.util.ImageCode;
 import com.hy.util.ImgUtil;
 import com.hy.util.JPushUtil;
 import com.hy.util.JTUtil;
+import com.hy.util.SendMail;
 import com.hy.vo.ParamsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,6 +73,10 @@ public class CommonAction extends BaseAction {
     private OrderService orderService;
     @Value("#{config['sessionExpireTime']}")
     private int sessionExpire;
+    @Value("#{config['adminEmail']}")
+    private String adminEmail;
+    @Autowired
+    private SendMail sendMail;
     private String userTable = Table.FQ + Table.USER;
     private String saleTable = Table.FQ + Table.EMPLOYEE;
 
@@ -117,7 +122,7 @@ public class CommonAction extends BaseAction {
             smsTemplate.put("variables", varJson.replace("random", code));
         SendSmsResponse sendSmsResponse = AliUtil.sendSms(smsTemplate, phone, null);
         Constants.setCacheOnExpire(CacheKey.U_SMS_Prefix + phone, code, 300);
-        return "OK".equals(sendSmsResponse.getCode()) ? new BaseResult(ReturnCode.OK) : new BaseResult(10000001, sendSmsResponse.getMessage());
+        return "OK".equals(sendSmsResponse.getCode()) ? new BaseResult(ReturnCode.OK) :(sendSmsResponse.getCode().equals("isv.BUSINESS_LIMIT_CONTROL")?new BaseResult(1235,"短信发送频繁,请稍后再试"):new BaseResult(10000001, sendSmsResponse.getMessage()));
     }
 
     @GetMapping("cleanTmp")
@@ -407,7 +412,13 @@ public class CommonAction extends BaseAction {
     public BaseResult remainTime(@RequestHeader(Constants.APP_VER) String appVer, String tag) {
         List<Map<String, Object>> couponDicts = baseDao.queryByProsInTab(Table.FQ + Table.COUPON_DICT, ParamsMap.newMap(Table.CouponDict.COUPON_NAME.name(), tag));
         if(CollectionUtils.isEmpty(couponDicts)) return new BaseResult(10999, "没有找到该活动");
-        Date expireDate = (Date) couponDicts.get(0).get("expireDate");
-        return new BaseResult(ReturnCode.OK, expireDate.getTime() - System.currentTimeMillis());
+//        Date expireDate = (Date) couponDicts.get(0).get("expireDate");
+        Date ctime = (Date) couponDicts.get(0).get("ctime");
+        return new BaseResult(ReturnCode.OK, ctime.getTime() - System.currentTimeMillis());
+    }
+    @GetMapping("notifyShip")
+    public BaseResult notifyShip(@RequestHeader(Constants.APP_VER)String appVer,@RequestHeader(Constants.USER_ID)Object uId,@RequestHeader(Constants.USER_PHONE)String uPhone,@RequestParam String oId) {
+        sendMail.sendEmail(adminEmail, uPhone + "----提醒发货,订单ID:" + oId,"恒雍.");
+        return new BaseResult(ReturnCode.OK);
     }
 }

@@ -1,6 +1,7 @@
 package com.hy.util;
 
 import com.hy.core.Constants;
+import com.sun.mail.util.MailSSLSocketFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Vector;
@@ -201,7 +203,7 @@ public class SendMail{
 	 *			功能   : 带参数的邮件发送方法
 	 */
     public String sendMail(final String mailUser,final String mailPassword,String smtpHost,String mailFrom,String mailTo,String subject,String msgContent,boolean isCheck)
-            throws IOException, MessagingException {
+            throws IOException, MessagingException, GeneralSecurityException {
         //TODO:初始化到
 /*        this.smtpHost   = smtpHost;   //SMTP主机地址
         this.mailFrom   = mailFrom;   //Mail发送人的地址
@@ -213,7 +215,10 @@ public class SendMail{
         props.put("mail.smtp.host", smtpHost); //设置SMTP主机地址
 //        props.put("mail.smtp.port", 465);
         props.put("mail.smtp.auth", "true");   //要求身份验证
-
+        props.put("mail.smtp.ssl.enable", "true");   //开启SSL链接
+        MailSSLSocketFactory sf = new MailSSLSocketFactory();
+        sf.setTrustAllHosts(true);
+        props.put("mail.smtp.ssl.socketFactory", sf);
         //邮件身份验证对象
         Authenticator auth = null;
         if(isCheck){
@@ -328,7 +333,7 @@ public class SendMail{
                 + content
                 + "</div></body></html>";
         try {
-            str = sendMail(mailUser, mailPassword, "smtp.qq.com", "79277490@qq.com", emailAdress, title, content_all, true);
+            str = sendMail(mailUser, mailPassword, "smtp.qq.com", "85164925@qq.com", emailAdress, title, content_all, true);
             // }
             if (!str.equals("发送邮件成功！")) {
                 logger.error("邮件发送错误：" + str);

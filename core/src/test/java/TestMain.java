@@ -1,28 +1,15 @@
-import com.alibaba.fastjson.JSON;
 import com.hy.core.Base64;
 import com.hy.core.ColumnProcess;
 import com.hy.core.ParamsMap;
-import com.hy.core.Table;
 import com.hy.dao.BaseDao;
-import com.hy.task.OrderPayJob;
-import com.hy.util.TriggerUtil;
+import com.hy.util.SendMail;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.authc.credential.SimpleCredentialsMatcher;
-import org.quartz.Job;
-import org.quartz.JobBuilder;
-import org.quartz.JobDataMap;
-import org.quartz.JobDetail;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.SimpleTrigger;
-import org.quartz.TriggerBuilder;
-import org.quartz.impl.StdSchedulerFactory;
+import org.apache.tools.ant.taskdefs.SendEmail;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -31,21 +18,15 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -270,6 +251,10 @@ public static void main8(String[] args) throws ClassNotFoundException, IllegalAc
         System.out.println("1.01".replace(".","").replaceFirst("^(0+)",""));
         System.out.println(new BigDecimal("0.01").multiply(new BigDecimal(100)).intValue());
         System.out.println(Locale.getDefault());
+        SendMail sendMail =new SendMail();
+        sendMail.setSMTPHost("smtp.qq.com");
+//        System.out.println(new BigDecimal(100L).compareTo(null) > 0);
+//        sendMail.sendEmail("85164925@qq.com", "tdfg", "yfdssssssss", "85164925@qq.com", "fsizchnscoalbgbi");
     }
 
 }
