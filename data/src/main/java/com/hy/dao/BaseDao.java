@@ -70,6 +70,12 @@ public class BaseDao {
     }
 
     @DataSource
+    public List<Map<String,Object>> queryByProsMulTab(String tableName, Map<String, Object> params) {
+        Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("params", params);
+        return sqlSessionTemplate.selectList(className + ".queryByProsMulTab", paramsMap);
+    }
+
+    @DataSource
     public List<Map<String, Object>> queryByProsInT(String tableName, Map<String, Object> params) {
         Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("params", params);
         return sqlSessionTemplate.selectList(className + ".queryByProsInT", paramsMap);
@@ -178,6 +184,21 @@ public int insertIgnoreBatchByProsInTab(String tableName, List<Map<String, Objec
         return resultList;
     }
 
+    @DataSource
+    public List<Map<String, Object>> queryPageMulTab(String tableName, final Page page) {
+        Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("page", page);
+        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryPageMulTab", paramsMap);
+        page.setResults(resultList);
+        return resultList;
+    }
+
+    @DataSource
+    public List<Map<String, Object>> queryPageLikeTab(String tableName, final Page page) {
+        Map<String, Object> paramsMap = ParamsMap.newMap("tableName", tableName).addParams("page", page);
+        List<Map<String, Object>> resultList = sqlSessionTemplate.selectList(className + ".queryPageLikeTab", paramsMap);
+        page.setResults(resultList);
+        return resultList;
+    }
     @DataSource
     public List<Map<String, Object>> queryBySql(String dynSql) {
         MapResultHandler mapResultHandler = new MapResultHandler();

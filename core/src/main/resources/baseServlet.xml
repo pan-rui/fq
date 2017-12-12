@@ -68,7 +68,7 @@ http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd   http://www.spring
                 <mvc:exclude-mapping path="/**/user/add"/>
                 <mvc:exclude-mapping path="/**/user/forget"/>
                 <mvc:exclude-mapping path="/**/sms"/>
-                <mvc:exclude-mapping path="/**/single/*"/>
+                <mvc:exclude-mapping path="/**/single/**"/>
                 <mvc:exclude-mapping path="/**/userCart"/>
                 <mvc:exclude-mapping path="/**/*.html"/>
                 <bean class="com.hy.intercept.TokenInterceptor"/>

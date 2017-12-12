@@ -65,6 +65,8 @@ public class Table {
 	//
 	public static final String PRODUCT_INSURANCE="PRODUCT_INSURANCE";
 	//
+	public static final String PRODUCT_SALE="PRODUCT_SALE";
+	//
 	public static final String PRODUCT_STORE="PRODUCT_STORE";
 	//
 	public static final String PRODUCT_TAGS="PRODUCT_TAGS";
@@ -243,7 +245,7 @@ public class Table {
 		COND,	//{"limit(条件)": {"money(消费金额)": 3999, "insure(险种)": ["bx1"], "buyNum(第几次购买)": 2, "period(期数)": 12}, "discounts(优惠项)": {"inst(保险费,0为免保险费)": 0, "rate(分期利率,0为免息)": 0,"exemptMon(免月供数)":2,"exemptMoney(首月供减免":100}}
 		IS_ENABLE,	//状态{"1":"启用","0":"禁用"}
 		IS_WITHDRAW,	//允许提现{"1":"是","0":"否"}
-		COUPON_TYPE,	//类型{"a":"红包","b":"推荐奖励","c":"现金券","e":"免费券","d":"免息券","x":"优惠活动"}
+		COUPON_TYPE,	//类型{"a":"红包","b":"推荐奖励","c":"现金券","e":"免费券","d":"免息券","e":"话费券","x":"优惠活动"}
 		EXPIRE_DATE,	//过期时间
 	}
 
@@ -274,7 +276,8 @@ public class Table {
 		ATT_VALS,	//属性可选值[值1，值2...]
 		SEQ,	//排序
 		IS_ENABLE,	//状态1启用,0禁用
-		affected,	//是否影响价格
+		AFFECTED,	//是否影响价格
+		IS_SHOW,	//是否显示
 		CTIME,	//增加时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间
@@ -507,10 +510,12 @@ public class Table {
 	public enum ProductDiscuss{
 		ID,	//主键
 		PRODUCT_ID,	//商品ID
+		ORDER_ID,	//订单ID
 		USER_ID,	//用户ID
 		FLOORS,	//楼层
 		PARENT_ID,	//上级ID
 		CONTENT,	//评论内容
+		LEVEL,	//评级
 		PICS,	//上传图集
 		CTIME,	//增加时间
 		UP_ID,	//修改人
@@ -529,6 +534,20 @@ public class Table {
 		TEL,	//经纪人电话
 		CTIME,	//
 		UTIME,	//
+	}
+
+	public enum ProductSale{
+		ID,	//
+		PRODUCT_ID,	//商品ID
+		USER_ID,	//用户ID
+		PRODUCT_NAME,	//商品名称
+		ORDER_ID,	//订单ID
+		PICS,	//故障说明图集
+		CONTENT,	//故障描述
+		SALE_TYPE,	//
+		CTIME,	//
+		UTIME,	//
+		UP_ID,	//
 	}
 
 	public enum ProductStore{
@@ -669,7 +688,7 @@ public class Table {
 		SOURCE,	//来源渠道
 		CLIENT_SN,	//客户端序列号
 		IS_ENABLE,	//状态 1:启用,0禁用
-		CERT_STATUS,	//实名认证状态:0待认证,1已认证,2认证失败,3待审核，4已审核5审核失败
+		CERT_STATUS,	//实名认证状态:0待认证,1已认证,2认证失败,3一级审核，4.一级审核失败,5.二级审核,6二级审核失败,7二级审核通过
 		PHONE,	//手机
 		PWD,	//登录密码
 		OSS_ID,	//照片地址
@@ -686,7 +705,7 @@ public class Table {
 	public enum UserAttach{
 		ID,	//主键
 		USER_ID,	//用户ID
-		ATTACH_TYPE,	//附件类型:0身份证正面，1身份证反，2,银行卡,3,临时文件,4,APK,5,评论,6售后,7商品图,8品牌图,9照片,a,分类图
+		ATTACH_TYPE,	//附件类型:0身份证正面，1身份证反，2,银行卡,3,临时文件,4,APK,5,评论,6售后,7商品图,8品牌图,9照片,a,分类图,b头像
 		URL,	//附件URL
 		ATTACH_LEN,	//附件大小
 		CTIME,	//创建时间

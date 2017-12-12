@@ -129,4 +129,10 @@ public class CommonDao {
         page.setResults(resultList);
         return resultList;
     }
+
+    public List<Map<String, Object>> queryProductDiscussPageMul(final Page page) {
+        List<Map<String,Object>> resultList=sqlSessionTemplate.selectList(className + ".queryProductDiscussPageMul", ParamsMap.newMap("page", page));
+        page.setResults(resultList);
+        return resultList;
+    }
 }

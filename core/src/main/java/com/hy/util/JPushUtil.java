@@ -22,6 +22,12 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class JPushUtil {
 	private static final Logger logger = LogManager.getLogger(JPushUtil.class);
@@ -31,9 +37,17 @@ public class JPushUtil {
 	public static final String SALE_APP_KEY="752a1c126636e9a39bbaff5c";
 	public static final String SALE_MASTER_SECRET="f49855441042b976219688f6";
 	public static final String MASTER_SECRET="7389c3053a29057a869669de";
+	private static final ThreadPoolExecutor scheduPool = new ThreadPoolExecutor(3,15,30, TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(15),new ThreadFactory() {
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread thread = new Thread(r);
+			thread.setDaemon(true);
+			return thread;
+		}
+	});
 
 
-	/**
+		/**
 	 * 推送消息	//payload
 	 */
 	public static void pushByAlias(String appType,String title,String content,JsonObject extra,String... alias){
@@ -126,5 +140,9 @@ public class JPushUtil {
 		JsonObject jsonObject=new JsonObject();
 		jsonObject.addProperty("aa", "gfweter");
 		JPushUtil.pushByRegId(JPushUtil.USER_APP,"测试标题","测试内容",jsonObject,"161a3797c80058df7f1");
+	}
+
+	public static void submitTask(Runnable runnable) {
+		scheduPool.submit(runnable);
 	}
 }

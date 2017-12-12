@@ -57,6 +57,8 @@ public class UserAction extends BaseAction {
         String userName=phone+Table.SEPARATE_CACHE+ImageCode.getPartSymbol(6);
         map.put(Table.User.USER_NAME.name(), userName);        //默认用户名
         map.put(Table.User.NICKNAME.name(),userName );        //默认昵称
+        if(StringUtils.isEmpty(map.get(Table.User.BIZER_ID.name())))
+            map.put(Table.User.BIZER_ID.name(), 1088);      //运营人员
         int result = userService.addUser(map.addParams(Table.User.TYPE.name(), "User"));
         if (result > 0) {
 //            Constants.setCache(CacheKey.U_SN_Prefix + phone, (String) map.get(Table.User.CLIENT_SN.name()));        //TODO:更新用户表CLIENT_SN字段时缓存起来

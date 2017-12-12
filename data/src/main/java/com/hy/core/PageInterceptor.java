@@ -34,8 +34,9 @@ import java.util.regex.Pattern;
 public class PageInterceptor implements Interceptor {
     private Logger logger = LogManager.getLogger(PageInterceptor.class);
     private Pattern tablePattern = Pattern.compile("(?<=\\.)(\\w+)", Pattern.CASE_INSENSITIVE);
-    private Pattern tablePattern2 = Pattern.compile("(?<=\\.)(\\w+)(\\s+([a-zA-Z]+)(?=,)?)?", Pattern.CASE_INSENSITIVE);
-    private Pattern tPattern = Pattern.compile("(\\w+\\.)?\\*", Pattern.CASE_INSENSITIVE);
+    private Pattern tablePattern2 = Pattern.compile("(?<=\\.)(\\w+)(\\s+([a-zA-Z]+)(?=,)?)", Pattern.CASE_INSENSITIVE);
+    private String tPatternStr = "(\\w+\\.)?(?<!\\[)\\*";
+    private Pattern tPattern = Pattern.compile(tPatternStr, Pattern.CASE_INSENSITIVE);
     /*    @Autowired
     private RedisCacheManager cacheManager;    //TODO:读取系统配置*/
     private String dialect; //数据库类型
@@ -115,9 +116,9 @@ public class PageInterceptor implements Interceptor {
                 String replaceStr = Constants.getCacheStringValue("columns", tableName);
                 String prefix = matcher1.group(1);
                 if (prefix == null)
-                    sql = sql.replaceFirst("(\\w+\\.)?\\*", replaceStr);
+                    sql = sql.replaceFirst(tPatternStr, replaceStr);
                 else
-                    sql = sql.replaceFirst("(\\w+\\.)?\\*", processStr(replaceStr, prefix));
+                    sql = sql.replaceFirst(tPatternStr, processStr(replaceStr, prefix));
             }
         }
         Constants.ReflectUtil.setFieldValue(boundSql, "sql", sql);
@@ -127,20 +128,22 @@ public class PageInterceptor implements Interceptor {
         String sql = boundSql.getSql();
         String pSql = new String(sql);
         Matcher matcher1 = tPattern.matcher(sql);
+        int index = sql.indexOf("from", 25);
+        if (index < 0) index = sql.indexOf("FROM", 25);
         a:
         while (matcher1.find()) {
             String prefix = matcher1.group(1);
-            Matcher matcher = tablePattern2.matcher(sql.substring(13));
+            Matcher matcher = tablePattern2.matcher(sql.substring(index));
             b:
             while (matcher.find()) {
                 String tableName = matcher.group(1);
                 String tableAlias = matcher.group(3);
                 String replaceStr = Constants.getCacheStringValue("columns", tableName);
                 if (prefix == null) {
-                    pSql = pSql.replaceFirst("(\\w+\\.)?\\*", replaceStr);
+                    pSql = pSql.replaceFirst(tPatternStr, replaceStr);
                     break a;
                 } else if (prefix.substring(0, prefix.length() - 1).equals(tableAlias)) {
-                    pSql = pSql.replaceFirst("(\\w+\\.)?\\*", processS(replaceStr, prefix, "_" + tableAlias));
+                    pSql = pSql.replaceFirst(tPatternStr, processS(replaceStr, prefix, "_" + tableAlias));
                     break b;
                 }
             }

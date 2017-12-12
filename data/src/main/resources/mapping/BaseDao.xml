@@ -67,6 +67,15 @@
         </trim>
     </select>
 
+    <select id="queryByProsMulTab" parameterType="map" resultType="map">
+        select * FROM ${tableName}
+        <trim prefix="where" prefixOverrides="or | and">
+            <foreach collection="params" item="item" index="key" separator=" and ">
+                <if test="null != item">${key} in (#{item})</if>
+            </foreach>
+        </trim>
+    </select>
+
     <select id="queryByProsInT" parameterType="map" resultType="map">
         select * FROM ${tableName}
         <trim prefix="where" prefixOverrides="or | and">
@@ -263,6 +272,64 @@
                     ${key} LIKE '%${item}%'
                 </if>
             </foreach>
+            </trim>
+        </if>
+        <if test="null != page.orderMap">
+            <trim prefix="order by" prefixOverrides=",">
+                <foreach collection="page.orderMap" item="item" index="key" separator=",">
+                    <if test="null != item">${key} ${item}</if>
+                </foreach>
+            </trim>
+        </if>
+    </select>
+
+    <select id="queryPageMulTab" parameterType="map" resultType="map">
+        select * from ${tableName} where 1=1
+        <if test="null != page.params">
+            <trim prefix="" prefixOverrides="or | and">
+                <foreach collection="page.params" item="item" index="key" open="and " separator=" and ">
+                    <if test="null != item">
+                        ${key} in (#{item})
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.matchs">
+            <trim prefix="" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="and " separator=" and ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.orderMap">
+            <trim prefix="order by" prefixOverrides=",">
+                <foreach collection="page.orderMap" item="item" index="key" separator=",">
+                    <if test="null != item">${key} ${item}</if>
+                </foreach>
+            </trim>
+        </if>
+    </select>
+
+    <select id="queryPageLikeTab" parameterType="map" resultType="map">
+        select * from ${tableName} where 1=1
+        <if test="null != page.params">
+            <trim prefix="" prefixOverrides="or | and">
+                <foreach collection="page.params" item="item" index="key" open="and " separator=" and ">
+                    <if test="null != item">
+                        #{item} LIKE '%${key}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.matchs">
+            <trim prefix="" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="and " separator=" and ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
             </trim>
         </if>
         <if test="null != page.orderMap">

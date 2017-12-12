@@ -419,4 +419,33 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
             <id property="id" column="id"/>
         </association>
     </resultMap>
+
+    <select id="queryProductDiscussPageMul" parameterType="map" resultMap="productDiscuss">
+        select pd.*,u.NAME u_name,u.USER_NAME u_userName,u.NICKNAME u_nickName,JSON_EXTRACT(o.ITEMS,JSON_UNQUOTE(REPLACE(JSON_SEARCH(o.ITEMS,'one',pd.PRODUCT_ID,NULL,'$[*].id'),'id','attr'))) o_attr FROM fq.PRODUCT_DISCUSS pd
+        JOIN fq.USER u ON pd.USER_ID=u.ID
+        JOIN fq.ORDER o ON pd.ORDER_ID=o.ID
+        WHERE 1=1
+        <if test="null != page.params">
+            <trim prefix="" prefixOverrides="or | and">
+                <foreach collection="page.params" item="item" index="key" open="and " separator=" and ">
+                    <if test="null != item">
+                        ${key} in (#{item})
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.orderMap">
+            <trim prefix="order by" prefixOverrides=",">
+                <foreach collection="page.orderMap" item="item" index="key" separator=",">
+                    <if test="null != item">${key} ${item}</if>
+                </foreach>
+            </trim>
+        </if>
+    </select>
+
+    <resultMap id="productDiscuss" type="java.util.LinkedHashMap">
+        <association property="user" javaType="map" columnPrefix="u_" autoMapping="true"></association>
+        <association property="productDiscuss" javaType="map" columnPrefix="pd_" autoMapping="true"></association>
+        <association property="order" javaType="map" columnPrefix="o_" autoMapping="true"></association>
+    </resultMap>
 </mapper>

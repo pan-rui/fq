@@ -230,7 +230,7 @@ public class OrderService {
                     if (flag) {
                         Object rate = discountsMap.get("rate");
                         Object inst = discountsMap.get("inst");
-                        Object exemptMon = discountsMap.get("exemptMon");
+                        List<Integer> exemptMon = (List<Integer>) discountsMap.get("exemptMon");
                         Object giveMon = discountsMap.get("giveMon");
                         if ( !StringUtils.isEmpty(rate)) {
                             BigDecimal rateD = new BigDecimal(String.valueOf(rate));
@@ -249,7 +249,7 @@ public class OrderService {
                                 if (insureMoney.compareTo(BigDecimal.ZERO) < 0) insureMoney = BigDecimal.ZERO;
                             }
                         }
-                        if (!StringUtils.isEmpty(exemptMon)) {
+                        if (!CollectionUtils.isEmpty(exemptMon)) {
 //                        Integer exemptMonI = Integer.parseInt(String.valueOf(exemptMon));
                             periodMap.put("exemptMon", exemptMon);
                         }

@@ -34,6 +34,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -80,7 +81,7 @@ public class CommonService {
                 .addParams(Table.UserAttach.UP_ID.name(), userId).addParams(Table.UserAttach.USER_ID.name(), userId).addParams(Table.UserAttach.IS_ENABLE.name(), 1);
         if ("TX".equals(fileType)) {
             baseDao.updateByProsInTab(isUser ? userTable : saleTable, ParamsMap.newMap(Table.User.OSS_ID.name(), path).addParams(Table.ID, userId));
-            paramsMap.addParams(Table.UserAttach.ATTACH_TYPE.name(), "9");
+            paramsMap.addParams(Table.UserAttach.ATTACH_TYPE.name(), "b");
         }
         baseDao.insertUpdateByProsInTab(Table.FQ + Table.USER_ATTACH, paramsMap);
         return new BaseResult(ReturnCode.OK, path);
@@ -137,7 +138,7 @@ public class CommonService {
                 //更新订单信息及相关信息
                 //保存交易记录
                 ParamsMap paramsMap = ParamsMap.newMap(Table.Order.STATE.name(), "1").addParams(Table.Order.PAY_TIME.name(), payTime).addParams(Table.Order.PAY_NO.name(), payNo);
-                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1])
+                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1]).addParams(Table.TradeRecord.TRADE_AMOUNT.name(),amount)
                         .addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo).addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(params)));
                 baseDao.updateByProsInTab(Table.FQ + Table.ORDER, paramsMap.addParams(Table.ID, bodyArr[2]));
                 Map<String,Object> orderMap=baseDao.queryByIdInTab(Table.FQ + Table.ORDER, bodyArr[2]);
@@ -149,7 +150,7 @@ public class CommonService {
                 }
                 sendWxMsg(RemoteProtocol.PAY_SUCCESS_MSG, ParamsMap.newMap("amount", amount+"元").addParams("user", userMap).addParams("order", orderMap));
             } else if (IPaymentService.TradeType.repay.name().equals(tradeType)) {
-                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1])
+                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1]).addParams(Table.TradeRecord.TRADE_AMOUNT.name(),amount)
                         .addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.BILL_DATE.name(), bodyArr[2]).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo)
                         .addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(params)));
                 Map<String, Object> repayMap = baseDao.queryByIdInTab(Table.FQ + Table.PLAN_REPAYMENT, bodyArr[2]);
@@ -245,10 +246,10 @@ public class CommonService {
             for (Map itMap : itemList) {
 //                    Map<String, Object> periodMap = JSON.parseObject((String) orderMap.get("period"));
                 Map<String, Object> periodMap = (Map<String, Object>) itMap.get("period");
-                Object exemptMonObj =periodMap.get("exemptMon");
+                List<Integer> exemptMonList = (List<Integer>) periodMap.get("exemptMon");
                 Object exemptMoney =periodMap.get("exemptMoney");
                 Object addMonthlyObj =periodMap.get("addMonthly");
-                Integer exemptMon = StringUtils.isEmpty(exemptMonObj)?null:Integer.parseInt(String.valueOf(exemptMonObj));
+//                Integer exemptMon = StringUtils.isEmpty(exemptMonObj)?null:Integer.parseInt(String.valueOf(exemptMonObj));
                 BigDecimal addMonthly = StringUtils.isEmpty(addMonthlyObj)?null:new BigDecimal(String.valueOf(addMonthlyObj));
                 BigDecimal monthly = new BigDecimal(itMap.get("monthly").toString());
                 if(addMonthly!=null)
@@ -276,8 +277,10 @@ public class CommonService {
                     if (i == 1 && exemptMoney != null) {
                         planRepayMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), new BigDecimal(String.valueOf(exemptMoney)));
                     }
-                    if(exemptMon!=null && i<=exemptMon){
-                        planRepayMap.addParams(Table.PlanRepayment.STATUS.name(), "4").addParams(Table.PlanRepayment.REPAY_NO.name(), null);
+//                    if(exemptMon!=null && i<=exemptMon){
+                    if(!CollectionUtils.isEmpty(exemptMonList)){
+                        if(exemptMonList.contains(i))
+                            planRepayMap.addParams(Table.PlanRepayment.STATUS.name(), "4").addParams(Table.PlanRepayment.REPAY_NO.name(), null);
                     }
                     srcList.add(planRepayMap);
                 }

@@ -8,6 +8,7 @@ import com.hy.base.BaseResult;
 import com.hy.base.IBase;
 import com.hy.base.ReturnCode;
 import com.hy.core.CacheKey;
+import com.hy.core.ColumnProcess;
 import com.hy.core.Constants;
 import com.hy.core.Page;
 import com.hy.core.ParamsMap;
@@ -25,6 +26,7 @@ import com.hy.util.JPushUtil;
 import com.hy.util.JTUtil;
 import com.hy.util.SendMail;
 import com.hy.vo.ParamsVo;
+import org.aspectj.apache.bcel.generic.RET;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
@@ -52,6 +54,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -92,10 +95,13 @@ public class CommonAction extends BaseAction {
             return new BaseResult(ReturnCode.REQUEST_PARAMS_VERIFY_ERROR);
         }
         JSONArray jsonArray = new JSONArray();
+        String fileType = request.getParameter("fileType");
+        boolean flag=StringUtils.isEmpty(fileType);
         List<Map<String, Object>> attachs = new ArrayList<>();
         for (int i = 0; i < fileMap.size(); i++) {
             MultipartFile file = fileMap.get("file" + i).get(0);
-            String fileType = request.getParameter("fileType" + i);
+            if(flag)
+                fileType = request.getParameter("fileType" + i);
             String relativelyPath = ImgUtil.pathMap.get(fileType);
             new File(ImgUtil.BASE_PATH + relativelyPath).mkdirs();
             String fileName = file.getOriginalFilename();
@@ -106,7 +112,8 @@ public class CommonAction extends BaseAction {
             attachs.add(ParamsMap.newMap(Table.UserAttach.ATTACH_TYPE.name(), fileType).addParams(Table.UserAttach.URL.name(), path).addParams(Table.UserAttach.ATTACH_LEN.name(), newFile.length())
                     .addParams(Table.UserAttach.UP_ID.name(), userId).addParams(Table.UserAttach.USER_ID.name(), userId).addParams(Table.UserAttach.IS_ENABLE.name(), 1));
         }
-        baseDao.insertUpdateBatchByProsInTab(Table.FQ + Table.USER_ATTACH, attachs);
+        if(flag)
+            baseDao.insertUpdateBatchByProsInTab(Table.FQ + Table.USER_ATTACH, attachs);
         return new BaseResult(ReturnCode.OK, jsonArray);
     }
 
@@ -122,7 +129,7 @@ public class CommonAction extends BaseAction {
             smsTemplate.put("variables", varJson.replace("random", code));
         SendSmsResponse sendSmsResponse = AliUtil.sendSms(smsTemplate, phone, null);
         Constants.setCacheOnExpire(CacheKey.U_SMS_Prefix + phone, code, 300);
-        return "OK".equals(sendSmsResponse.getCode()) ? new BaseResult(ReturnCode.OK) :(sendSmsResponse.getCode().equals("isv.BUSINESS_LIMIT_CONTROL")?new BaseResult(1235,"短信发送频繁,请稍后再试"):new BaseResult(10000001, sendSmsResponse.getMessage()));
+        return "OK".equals(sendSmsResponse.getCode()) ? new BaseResult(ReturnCode.OK) : (sendSmsResponse.getCode().equals("isv.BUSINESS_LIMIT_CONTROL") ? new BaseResult(1235, "短信发送频繁,请稍后再试") : new BaseResult(10000001, sendSmsResponse.getMessage()));
     }
 
     @GetMapping("cleanTmp")
@@ -156,21 +163,22 @@ public class CommonAction extends BaseAction {
     }
 
     @PostMapping("certS4")
-    public BaseResult certStep4(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone) throws Exception {
+    public BaseResult certStep4(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone) {
         String status = "1";
         //TODO:通知审核人员,审核成功后推送给用户,
-        BaseResult baseResult = JTUtil.cert(userId, phone);
-        if (baseResult.getCode() == 0) {            //,,,,默认审核通过
-            status = "4";
-        } else status = "3";
-        int cou = baseDao.updateByProsInTab(userTable, ParamsMap.newMap(Table.User.CERT_STATUS.name(), status).addParams(Table.User.UP_ID.name(), userId).addParams(Table.User.UTIME.name(), new Date()).addParams(Table.ID, userId));
-        Constants.setCacheOnExpire(CacheKey.U_CERT_STATUS_Prefix + phone, "4", UserService.certStatusExpire);
-/*        String certUserId = Constants.getSystemStringValue("CERT_USER_ID");
+//        BaseResult baseResult = JTUtil.cert(userId, phone);
+//        if (baseResult.getCode() == 0) {            //,,,,默认审核通过
+        status = "3";
+        String certUserId = Constants.getSystemStringValue("CERT_USER_ID");
         String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.SALE_APP + certUserId);
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("userId", userId);
-        JPushUtil.pushByRegId(JPushUtil.SALE_APP, "有一项用户分期资质审核任务待完成", "用户号码:" + phone, jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]);      //TODO:AppMeta*/
-//        return new BaseResult(ReturnCode.OK);
+        JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.SALE_APP, "有一项用户分期资质审核任务待完成", "用户号码:" + phone, jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));      //TODO:AppMeta
+//        }
+/*            status = "4";
+        } else status = "3";*/
+        int cou = baseDao.updateByProsInTab(userTable, ParamsMap.newMap(Table.User.CERT_STATUS.name(), status).addParams(Table.User.UP_ID.name(), userId).addParams(Table.User.UTIME.name(), new Date()).addParams(Table.ID, userId));
+        Constants.setCacheOnExpire(CacheKey.U_CERT_STATUS_Prefix + phone, status, UserService.certStatusExpire);
         return new BaseResult(ReturnCode.OK);
     }
 
@@ -273,8 +281,8 @@ public class CommonAction extends BaseAction {
 
     /**
      * @param uId
-     * @param repayId   还款计划ID
-     * @param repayId   payType
+     * @param repayId    还款计划ID
+     * @param repayId    payType
      * @param bankCardNo
      * @return
      */
@@ -411,14 +419,51 @@ public class CommonAction extends BaseAction {
     @GetMapping("remainTime")
     public BaseResult remainTime(@RequestHeader(Constants.APP_VER) String appVer, String tag) {
         List<Map<String, Object>> couponDicts = baseDao.queryByProsInTab(Table.FQ + Table.COUPON_DICT, ParamsMap.newMap(Table.CouponDict.COUPON_NAME.name(), tag));
-        if(CollectionUtils.isEmpty(couponDicts)) return new BaseResult(10999, "没有找到该活动");
+        if (CollectionUtils.isEmpty(couponDicts)) return new BaseResult(10999, "没有找到该活动");
 //        Date expireDate = (Date) couponDicts.get(0).get("expireDate");
         Date ctime = (Date) couponDicts.get(0).get("ctime");
         return new BaseResult(ReturnCode.OK, ctime.getTime() - System.currentTimeMillis());
     }
+
     @GetMapping("notifyShip")
-    public BaseResult notifyShip(@RequestHeader(Constants.APP_VER)String appVer,@RequestHeader(Constants.USER_ID)Object uId,@RequestHeader(Constants.USER_PHONE)String uPhone,@RequestParam String oId) {
-        sendMail.sendEmail(adminEmail, uPhone + "----提醒发货,订单ID:" + oId,"恒雍.");
+    public BaseResult notifyShip(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId, @RequestHeader(Constants.USER_PHONE) String uPhone, @RequestParam String oId) {
+        sendMail.sendEmail(adminEmail, uPhone + "----提醒发货,订单ID:" + oId, "恒雍.");
         return new BaseResult(ReturnCode.OK);
+    }
+
+    @GetMapping("certAttach/{userId:[0-9]+}")
+    public BaseResult getCertAttach(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId, @PathVariable Long userId) {
+        return new BaseResult(ReturnCode.OK, userDao.queryUserCertTab(userId));
+    }
+
+    @PostMapping("laborCert")
+    public BaseResult laborCert(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId, @EncryptProcess ParamsVo paramsVo) throws Exception {
+        String status = (String) paramsVo.getParams().get(Table.User.CERT_STATUS.name());
+        Object userId = paramsVo.getParams().remove(Table.USER_ID);
+        String phone = (String) paramsVo.getParams().remove(Table.User.PHONE.name());
+        if ("5".equals(status)) {   //一级审核通过
+            BaseResult baseResult = JTUtil.cert(userId, phone);
+            if (baseResult.getCode() == 0) {            //,,,,默认(二级)审核通过
+                status = "7";
+            } else status = "6";
+        }
+        baseDao.updateByProsInTab(userTable, ParamsMap.newMap(Table.User.CERT_STATUS.name(), status).addParams(Table.User.UP_ID.name(), uId).addParams(Table.User.UTIME.name(), new Date()).addParams(Table.ID, userId));
+        Constants.setCacheOnExpire(CacheKey.U_CERT_STATUS_Prefix + phone, status, UserService.certStatusExpire);
+        return new BaseResult(ReturnCode.OK);
+    }
+
+    @GetMapping("properties")
+    public BaseResult getConfigProperties(@RequestHeader(Constants.APP_VER) String appVer, @RequestParam(required = true) String pors) {
+        Map<String, Object> prosMap = new HashMap<>();
+        for (String pro : pors.split(Table.SEPARATE_SPLIT)) {
+            prosMap.put(pro, Constants.getSystemStringValue(ColumnProcess.decryptVal(pro)));
+        }
+        return new BaseResult(ReturnCode.OK, prosMap);
+    }
+
+    @PostMapping("productDiscuss")
+    public BaseResult getProductDiscuss(@RequestHeader(Constants.APP_VER) String appVer, @EncryptProcess Page page) {
+        commonDao.queryProductDiscussPageMul(page);
+        return new BaseResult(0, page);
     }
 }
