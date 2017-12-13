@@ -128,8 +128,8 @@ public class PageInterceptor implements Interceptor {
         String sql = boundSql.getSql();
         String pSql = new String(sql);
         Matcher matcher1 = tPattern.matcher(sql);
-        int index = sql.indexOf("from", 25);
-        if (index < 0) index = sql.indexOf("FROM", 25);
+        int index = sql.indexOf("from", 15);
+        if (index < 0) index = sql.indexOf("FROM", 15);
         a:
         while (matcher1.find()) {
             String prefix = matcher1.group(1);
@@ -148,7 +148,7 @@ public class PageInterceptor implements Interceptor {
                 }
             }
         }
-        logger.info(pSql);
+//        logger.info(pSql);
         Constants.ReflectUtil.setFieldValue(boundSql, "sql", pSql);
     }
 

@@ -211,9 +211,18 @@ public int insertIgnoreBatchByProsInTab(String tableName, List<Map<String, Objec
         return sqlSessionTemplate.selectList(className + ".queryByS", ParamsMap.newMap("dynSql", dynSql));
     }
 
+    @DataSource
+    public Map<String, Object> queryBySOne(String dynSql) {
+        return sqlSessionTemplate.selectOne(className + ".queryByS", ParamsMap.newMap("dynSql", dynSql));
+    }
+
     @DataSource(DataSourceHolder.DBType.master)
     public void ddlBySql(String dynSql) {
         sqlSessionTemplate.insert(className + ".ddlBySql", ParamsMap.newMap("dynSql", dynSql));
     }
 
+@DataSource
+public Map<String,Object> queryJsonSize(String tableName,String fieldKey,String jsonPath,Map<String,Object> params) {
+    return sqlSessionTemplate.selectOne(className + ".queryJsonSize", ParamsMap.newMap("tableName",tableName).addParams("fieldKey",fieldKey).addParams("jsonPath",jsonPath).addParams("params",params));
+}
 }

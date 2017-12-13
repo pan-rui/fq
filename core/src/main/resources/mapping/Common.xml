@@ -420,8 +420,9 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
         </association>
     </resultMap>
 
+    <!-- ORDER.STATE >= '5' 才可以评价 -->
     <select id="queryProductDiscussPageMul" parameterType="map" resultMap="productDiscuss">
-        select pd.*,u.NAME u_name,u.USER_NAME u_userName,u.NICKNAME u_nickName,JSON_EXTRACT(o.ITEMS,JSON_UNQUOTE(REPLACE(JSON_SEARCH(o.ITEMS,'one',pd.PRODUCT_ID,NULL,'$[*].id'),'id','attr'))) o_attr FROM fq.PRODUCT_DISCUSS pd
+        select pd.*,u.NAME u_name,u.USER_NAME u_userName,u.NICKNAME u_nickName,u.OSS_ID u_ossId,JSON_EXTRACT(o.ITEMS,JSON_UNQUOTE(REPLACE(JSON_SEARCH(o.ITEMS,'one',pd.PRODUCT_ID,NULL,'$[*].id'),'id','attr'))) o_attr FROM fq.PRODUCT_DISCUSS pd
         JOIN fq.USER u ON pd.USER_ID=u.ID
         JOIN fq.ORDER o ON pd.ORDER_ID=o.ID
         WHERE 1=1
@@ -429,7 +430,16 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
             <trim prefix="" prefixOverrides="or | and">
                 <foreach collection="page.params" item="item" index="key" open="and " separator=" and ">
                     <if test="null != item">
-                        ${key} in (#{item})
+                        ${key} in (${item})
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="(" close=")" separator=" or ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
                     </if>
                 </foreach>
             </trim>
@@ -448,4 +458,26 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
         <association property="productDiscuss" javaType="map" columnPrefix="pd_" autoMapping="true"></association>
         <association property="order" javaType="map" columnPrefix="o_" autoMapping="true"></association>
     </resultMap>
+
+    <update id="operateProductDiscuss" parameterType="map">
+        UPDATE fq.PRODUCT_DISCUSS
+         <trim prefix="set " prefixOverrides=",">
+          <choose>
+              <when test="operate == 0">
+                  OPPOSE_SIZE=OPPOSE_SIZE+1,OPPOSE=JSON_ARRAY_APPEND(OPPOSE,'$',#{userId})
+              </when>
+              <when test="operate == 1">
+                   APPROVED_SIZE=APPROVED_SIZE+1,APPOVED=JSON_ARRAY_APPEND(APPOVED,'$',#{userId})
+              </when>
+              <when test="operate == 2">
+                  OPPOSE_SIZE=OPPOSE_SIZE-1,OPPOSE=JSON_REMOVE(OPPOSE,CONCAT('$[',${index},']'))
+              </when>
+              <when test="operate == 3">
+                  APPROVED_SIZE=APPROVED_SIZE-1,APPOVED=JSON_REMOVE(APPOVED,CONCAT('$[',${index},']'))
+              </when>
+          </choose>
+         </trim>
+        WHERE ID=#{id}
+    </update>
+
 </mapper>

@@ -155,7 +155,7 @@ public class OrderService {
     public BaseResult addOrder(Object uId, String reqIp, ParamsVo paramsVo) {
         ParamsMap<String, Object> order = paramsVo.getParams();
         int userId = Integer.parseInt(String.valueOf(order.get(Table.USER_ID)));
-        List<Map<String, Object>> countList = baseDao.queryByS("select sum(SUM) cou from fq.ORDER where USER_ID=" + userId + " and STATE not in ('8','9','10')");
+        List<Map<String, Object>> countList = baseDao.queryByS("select sum(SUM) cou from fq.ORDER where USER_ID=" + userId + " and STATE not in ('0','8','9','10')");
         if (!CollectionUtils.isEmpty(countList) && !CollectionUtils.isEmpty(countList.get(0)) && Integer.parseInt(String.valueOf(countList.get(0).get("cou"))) >= 3)
             return new BaseResult(ReturnCode.ORDER_LIMIT_SIZE);
         String orderNo = IBase.sdf.format(new Date());

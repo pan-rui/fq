@@ -26,6 +26,7 @@ import com.hy.util.JPushUtil;
 import com.hy.util.JTUtil;
 import com.hy.util.SendMail;
 import com.hy.vo.ParamsVo;
+import org.apache.ibatis.binding.MapperMethod;
 import org.aspectj.apache.bcel.generic.RET;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -164,11 +165,11 @@ public class CommonAction extends BaseAction {
 
     @PostMapping("certS4")
     public BaseResult certStep4(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone) {
-        String status = "1";
+        String status = "3";
         //TODO:通知审核人员,审核成功后推送给用户,
 //        BaseResult baseResult = JTUtil.cert(userId, phone);
 //        if (baseResult.getCode() == 0) {            //,,,,默认审核通过
-        status = "3";
+//        status = "3";
         String certUserId = Constants.getSystemStringValue("CERT_USER_ID");
         String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.SALE_APP + certUserId);
         JsonObject jsonObject = new JsonObject();
@@ -466,4 +467,16 @@ public class CommonAction extends BaseAction {
         commonDao.queryProductDiscussPageMul(page);
         return new BaseResult(0, page);
     }
+
+    @PostMapping("productDiscuss/{id:[0-9]+}/{operate:[01234]}")
+    public BaseResult OperateProductDiscuss(@RequestHeader(Constants.APP_VER) String appVer,@RequestHeader(Constants.USER_ID) Long uId,@PathVariable Long id,@PathVariable int operate,@RequestParam(defaultValue = "1000000")Integer index) {
+        int count = commonDao.operateProductDiscuss(operate, uId, id,index);
+        String fieldKey = operate == 0 ? Table.ProductDiscuss.OPPOSE_SIZE.name() : (operate == 1 ? Table.ProductDiscuss.APPROVED_SIZE.name() : null);
+        Object data=null;
+        if(!StringUtils.isEmpty(fieldKey))
+            data = baseDao.queryBySOne("select " + fieldKey + " size from fq.PRODUCT_DISCUSS where ID=" + id);
+//            data=baseDao.queryJsonSize(Table.FQ+Table.PRODUCT_DISCUSS,fieldKey,"$", ParamsMap.newMap(Table.ID,id));
+        return new BaseResult(ReturnCode.OK,data);
+    }
+
 }

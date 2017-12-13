@@ -341,6 +341,15 @@
         </if>
     </select>
 
+    <select id="queryJsonSize" parameterType="map" resultType="map">
+        SELECT JSON_LENGTH(${fieldKey},'${jsonPath}') size FROM ${tableName}
+        <trim prefix="where" prefixOverrides="or | and">
+            <foreach collection="params" item="item" index="key" separator=" and ">
+                <if test="null != item">${key}=#{item}</if>
+            </foreach>
+        </trim>
+    </select>
+
     <insert id="ddlBySql" parameterType="map">
         ${dynSql}
     </insert>

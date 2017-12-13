@@ -259,6 +259,7 @@ public class LogAspect extends BaseAction {
                 page.getMatchs().put(k.substring(0,indexOf).toLowerCase() + Table.SEPARATE + k.substring(indexOf+1), page.getMatchs().remove(k));
             });
         }
+        //orderMap  也可进行编码
     }
 
 /*	@AfterThrowing(pointcut = "dataSource()", throwing = "e")

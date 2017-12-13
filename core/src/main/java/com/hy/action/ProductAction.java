@@ -57,7 +57,7 @@ public class ProductAction extends BaseAction {
                 case 4:
                 case 5:
                 case 6:
-                    result[0] += 1;     //中[2.5~3.5]
+                    result[1] += 1;     //中[2.5~3.5]
                     break;
                 default:
                     result[2] += 1;     //好

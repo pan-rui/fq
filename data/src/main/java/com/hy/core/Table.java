@@ -517,6 +517,10 @@ public class Table {
 		CONTENT,	//评论内容
 		LEVEL,	//评级
 		PICS,	//上传图集
+		APPROVED_SIZE,	//赞同数量
+		OPPOSE_SIZE,	//反对数量
+		APPOVED,	//赞同者
+		OPPOSE,	//反对者
 		CTIME,	//增加时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间

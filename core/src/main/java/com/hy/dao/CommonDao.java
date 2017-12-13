@@ -135,4 +135,10 @@ public class CommonDao {
         page.setResults(resultList);
         return resultList;
     }
+
+    public int operateProductDiscuss(int operate, Object userId, Object id,int index) {
+        return sqlSessionTemplate.update(className + ".operateProductDiscuss", ParamsMap.newMap("operate", operate).addParams("userId", userId).addParams("id", id).addParams("index",index));
+    }
+
+
 }
