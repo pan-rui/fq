@@ -30,11 +30,11 @@ public class CouponExpireRemind {
 //    @Scheduled(cron = "0 30 10 * * *")
     public void useMind() {
         remind("今天",0);
-        Calendar calendar=Calendar.getInstance();
+/*        Calendar calendar=Calendar.getInstance();
         String interval= Constants.getSystemStringValue("COUPON_EXPIRE_REMIND");
         int si=StringUtils.isEmpty(interval) ? 3 : Integer.parseInt(interval);
         calendar.add(Calendar.DAY_OF_MONTH, si);
-        remind(IBase.dateSdf.format(calendar.getTime()),si);
+        remind(IBase.dateSdf.format(calendar.getTime()),si);*/
         logger.info("=========================================CouponExpireRemind===========================================================================");
     }
 
@@ -43,11 +43,12 @@ public class CouponExpireRemind {
         list1.forEach((map)->{
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("couponId", (Long)map.get("c_id"));
-            String appMeta=Constants.hgetCache(CacheKey.APP_META,JPushUtil.USER_APP+map.get("c_userId"));
+            Object userId=map.get("c_userId");
+            String appMeta=Constants.hgetCache(CacheKey.APP_META,JPushUtil.USER_APP+userId);
             //您的优惠券还有3天就失效，再不用就要错失一大波优惠啦
             if(!StringUtils.isEmpty(appMeta))
-                JPushUtil.pushByRegId(JPushUtil.USER_APP,"您有一张"+map.get("cd_couponAmount")+"元的优惠券将在"+dateString+" 过期,请尽快使用.","前往使用:",jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]);     //TODO:appMeta
+                JPushUtil.submitTask(()->JPushUtil.pushByRegId(JPushUtil.USER_APP+userId,"NOTIFY","优惠券过期提醒","您有超值优惠券今天到期,快去用掉吧!",jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]));     //TODO:appMeta
         });
     }
-
+//"您有一张"+map.get("cd_couponAmount")+"元的优惠券将在"+dateString+" 过期,请尽快使用."
 }

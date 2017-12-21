@@ -13,6 +13,7 @@ import com.hy.dao.BaseDao;
 import com.hy.dao.ProductDao;
 import com.hy.service.pay.Pay;
 import com.hy.task.OrderCancelJob;
+import com.hy.task.OrderCancelNotify;
 import com.hy.task.OrderPayJob;
 import com.hy.vo.ParamsVo;
 import org.apache.commons.lang.NumberUtils;
@@ -55,6 +56,7 @@ public class OrderService {
     private int orderTaskPool;
     private String tableName = Table.FQ + Table.ORDER;
     private static final String orderPayRemind = "ORDER_PAY_REMIND";
+    private static final String orderCancel = "ORDER_CANCEL";
     private static final String orderCancelRemind = "ORDER_CANCEL_REMIND";
     private static final Logger logger = LogManager.getLogger(OrderService.class);
     private static final AtomicInteger atomicInteger = new AtomicInteger(0);
@@ -318,10 +320,10 @@ public class OrderService {
         order.addParams(Table.Order.CTIME.name(), new Date());
         int count = baseDao.insertUpdateByProsInTab(tableName, order);
         if (count > 0) {            //付款通知
-            String delay = Constants.getSystemStringValue(orderPayRemind);
+            String delay = Constants.getSystemStringValue(orderCancel);
             String delay2 = Constants.getSystemStringValue(orderCancelRemind);
-            OrderService.submitTask(new OrderPayJob(baseDao, userId, orderNo), StringUtils.isEmpty(delay) ? 7200000L : Integer.parseInt(delay));
-            OrderService.submitTask(new OrderCancelJob(baseDao, userId, orderNo), StringUtils.isEmpty(delay2) ? 86400000L : Integer.parseInt(delay2));
+            OrderService.submitTask(new OrderCancelNotify(baseDao, userId, orderNo), StringUtils.isEmpty(delay2) ? 79200000L : Integer.parseInt(delay2));
+            OrderService.submitTask(new OrderCancelJob(baseDao, userId, orderNo), StringUtils.isEmpty(delay) ? 86400000L : Integer.parseInt(delay));
         }
         return count > 0 ? new BaseResult(ReturnCode.OK, ColumnProcess.encryMap(order)) : new BaseResult(ReturnCode.FAIL);
     }

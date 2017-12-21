@@ -77,6 +77,7 @@ public class GenerateAction {
         sbTab.append("\tpublic static final String UTIME = \"UTIME\";\n");
         sbTab.append("\tpublic static final String DESC = \"DESC\";\n");
         sbTab.append("\tpublic static final String ASC = \"ASC\";\n");
+        sbTab.append("\tpublic static final String TYPE = \"TYPE\";\n");
 /*        sbTab.append("\tpublic static final String SEPARATE_TREE = \">\";\n");
 
         sbTab.append("\tpublic static final String ORDER_BY_DESC = \"DESC\";\n");

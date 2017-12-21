@@ -1,5 +1,6 @@
 package com.hy.core;
 
+import com.hy.dao.BaseDao;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import redis.clients.jedis.Jedis;
@@ -26,6 +27,7 @@ public class Constants {
     public static ApplicationContext applicationContext;
     public static String publicKey = "Crypt_Pub_Key";
     public static Properties config;
+    public static BaseDao baseDao;
     public static final String APPLICATION_JSON = "application/json;charset=utf-8";
     public static final String USER_ID = "hyUI";
     public static final String USER_PHONE = "hyUP";
@@ -251,6 +253,17 @@ public class Constants {
         jedis.close();
     }
 
+    public static void hDelCache(byte[] key,byte[]... fields) {
+        Jedis jedis=jedisPool.getResource();
+        jedis.hdel(key,fields);
+        jedis.close();
+    }
+
+    public static void hDelCache(String key,String... fields) {
+        Jedis jedis=jedisPool.getResource();
+        jedis.hdel(key,fields);
+        jedis.close();
+    }
     /**
      * 利用反射进行操作的一个工具类
      */

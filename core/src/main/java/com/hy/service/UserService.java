@@ -49,7 +49,7 @@ public class UserService {
     private String merId;
     @Autowired
     private BaseDao baseDao;
-    public static int certStatusExpire=172800;      //2天
+    public static int certStatusExpire=14400;      //2天
     private final Logger logger = LogManager.getLogger(UserService.class);
     public int addUser(Map<String, Object> uMap) {
         return baseDao.insertByProsInTab(Table.FQ+ Table.USER, uMap);

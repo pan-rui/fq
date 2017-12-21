@@ -49,7 +49,7 @@ public class OrderPayJob implements Job,Runnable {
             JsonObject jsonObject=new JsonObject();
             jsonObject.addProperty("orderNo",orderNo);
             jsonObject.addProperty("userId",userId);
-            JPushUtil.pushByRegId(JPushUtil.USER_APP,"您有一笔订单未付款,订单号为:"+orderList.get(0).get("orderNo"),"待支付金额:"+orderList.get(0).get("payMoney")+",查看详情",jsonObject ,appMeta.split(Table.SEPARATE_SPLIT)[0]);
+            JPushUtil.submitTask(()->JPushUtil.pushByRegId(JPushUtil.USER_APP+userId,"NOTIFY","您有一笔订单未付款,订单号为:"+orderList.get(0).get("orderNo"),"待支付金额:"+orderList.get(0).get("payMoney")+",查看详情",jsonObject ,appMeta.split(Table.SEPARATE_SPLIT)[0]));
         }
     }
 
@@ -71,7 +71,7 @@ public class OrderPayJob implements Job,Runnable {
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("orderNo", orderNo);
                 jsonObject.addProperty("userId", userId);
-                JPushUtil.pushByRegId(JPushUtil.USER_APP, "您有一笔订单未付款,订单号为:" + orderList.get(0).get("orderNo"), "待支付金额:" + orderList.get(0).get("orderMoney") + ",查看详情", jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]);
+                JPushUtil.submitTask(()->JPushUtil.pushByRegId(JPushUtil.USER_APP+userId,"NOTIFY", "您有一笔订单未付款,订单号为:" + orderList.get(0).get("orderNo"), "待支付金额:" + orderList.get(0).get("orderMoney") + ",查看详情", jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]));
             }
         }
     }

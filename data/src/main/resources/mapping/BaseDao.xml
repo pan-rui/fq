@@ -289,7 +289,7 @@
             <trim prefix="" prefixOverrides="or | and">
                 <foreach collection="page.params" item="item" index="key" open="and " separator=" and ">
                     <if test="null != item">
-                        ${key} in (#{item})
+                        ${key} in (${item})
                     </if>
                 </foreach>
             </trim>

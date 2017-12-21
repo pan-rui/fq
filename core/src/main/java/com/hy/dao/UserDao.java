@@ -40,6 +40,10 @@ public class UserDao {
         return sqlSessionTemplate.selectList(className + ".queryRepaysTab", ParamsMap.newMap("userId", userId).addParams("date", date));
     }
 
+    public List<Map<String,Object>> queryUserRepaysTab(Object userId,Object productId) {
+        return sqlSessionTemplate.selectList(className + ".queryUserRepaysTab", ParamsMap.newMap("userId", userId).addParams("productId",productId));
+    }
+
     public List<Map<String, Object>> queryUserCertTab(Object userId) {
         return sqlSessionTemplate.selectList(className + ".queryUserCertTab", ParamsMap.newMap("userId", userId));
     }

@@ -139,6 +139,12 @@ public class CommonAction extends BaseAction {
         return new BaseResult(ReturnCode.OK);
     }
 
+    @GetMapping("resetSystem")
+    public BaseResult resetSystem() {
+        commonService.resetSystemCache();
+        return new BaseResult(ReturnCode.OK);
+    }
+
     @PostMapping("certS1")
     public Object certStep1(@RequestHeader(Constants.USER_ID) String userId, @RequestHeader(Constants.USER_PHONE) String phone, @EncryptProcess ParamsVo paramsVo) {
         String code = (String) paramsVo.getParams().remove("SMS_CODE");
@@ -170,11 +176,11 @@ public class CommonAction extends BaseAction {
 //        BaseResult baseResult = JTUtil.cert(userId, phone);
 //        if (baseResult.getCode() == 0) {            //,,,,默认审核通过
 //        status = "3";
-        String certUserId = Constants.getSystemStringValue("CERT_USER_ID");
+        final String certUserId = Constants.getSystemStringValue("CERT_USER_ID");
         String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.SALE_APP + certUserId);
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("userId", userId);
-        JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.SALE_APP, "有一项用户分期资质审核任务待完成", "用户号码:" + phone, jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));      //TODO:AppMeta
+        JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.SALE_APP+certUserId, "AUDIT","有一项用户分期资质审核任务待完成", "用户号码:" + phone, jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));      //TODO:AppMeta
 //        }
 /*            status = "4";
         } else status = "3";*/
@@ -366,7 +372,7 @@ public class CommonAction extends BaseAction {
         page.setPageSize(4);
         page.setParams(ParamsMap.newMap(Table.IS_ENABLE, 1));
         if (classifyId != null)
-            page.setMatchs(ParamsMap.newMap(Table.Brand.CLASSIFY_LIST_ID.name(), classifyId));
+            page.setMatchs(ParamsMap.newMap(Table.Brand.HOT_CLASSIFY.name(), classifyId));
         return new BaseResult(0, baseDao.queryPageInTab(Table.FQ + Table.BRAND, page));
     }
 
@@ -437,22 +443,6 @@ public class CommonAction extends BaseAction {
         return new BaseResult(ReturnCode.OK, userDao.queryUserCertTab(userId));
     }
 
-    @PostMapping("laborCert")
-    public BaseResult laborCert(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId, @EncryptProcess ParamsVo paramsVo) throws Exception {
-        String status = (String) paramsVo.getParams().get(Table.User.CERT_STATUS.name());
-        Object userId = paramsVo.getParams().remove(Table.USER_ID);
-        String phone = (String) paramsVo.getParams().remove(Table.User.PHONE.name());
-        if ("5".equals(status)) {   //一级审核通过
-            BaseResult baseResult = JTUtil.cert(userId, phone);
-            if (baseResult.getCode() == 0) {            //,,,,默认(二级)审核通过
-                status = "7";
-            } else status = "6";
-        }
-        baseDao.updateByProsInTab(userTable, ParamsMap.newMap(Table.User.CERT_STATUS.name(), status).addParams(Table.User.UP_ID.name(), uId).addParams(Table.User.UTIME.name(), new Date()).addParams(Table.ID, userId));
-        Constants.setCacheOnExpire(CacheKey.U_CERT_STATUS_Prefix + phone, status, UserService.certStatusExpire);
-        return new BaseResult(ReturnCode.OK);
-    }
-
     @GetMapping("properties")
     public BaseResult getConfigProperties(@RequestHeader(Constants.APP_VER) String appVer, @RequestParam(required = true) String pors) {
         Map<String, Object> prosMap = new HashMap<>();
@@ -477,6 +467,20 @@ public class CommonAction extends BaseAction {
             data = baseDao.queryBySOne("select " + fieldKey + " size from fq.PRODUCT_DISCUSS where ID=" + id);
 //            data=baseDao.queryJsonSize(Table.FQ+Table.PRODUCT_DISCUSS,fieldKey,"$", ParamsMap.newMap(Table.ID,id));
         return new BaseResult(ReturnCode.OK,data);
+    }
+
+    @PostMapping("addProductDiscuss")
+    public BaseResult productDiscuss(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Long uId,@EncryptProcess ParamsVo paramsVo) {
+        int size = baseDao.insertByProsInTab(Table.FQ + Table.PRODUCT_DISCUSS, paramsVo.getParams().addParams(Table.ProductDiscuss.APPOVED.name(),"[]")
+                .addParams(Table.ProductDiscuss.OPPOSE.name(),"[]").addParams(Table.UP_ID, uId).addParams(Table.UTIME, new Date()));
+        Object orderId=paramsVo.getParams().get(Table.ProductDiscuss.ORDER_ID.name());
+        Object productId=paramsVo.getParams().get(Table.ProductDiscuss.PRODUCT_ID.name());
+        if (size > 0) {
+            Map<String, Object> jsonPath = baseDao.queryBySOne("SELECT JSON_UNQUOTE(REPLACE(JSON_SEARCH(o.ITEMS,'one'," + productId + ",NULL,'$[*].id'),'id','isDiscuss')) path FROM fq.ORDER o WHERE ID=" + orderId);
+            if(!CollectionUtils.isEmpty(jsonPath))
+                size=baseDao.ddlBySql("UPDATE fq.ORDER o set o.ITEMS=JSON_INSERT(o.ITEMS,'"+jsonPath.get("path")+"',1) WHERE o.ID="+orderId);
+        }
+        return size > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
     }
 
 }

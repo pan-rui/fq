@@ -217,8 +217,8 @@ public int insertIgnoreBatchByProsInTab(String tableName, List<Map<String, Objec
     }
 
     @DataSource(DataSourceHolder.DBType.master)
-    public void ddlBySql(String dynSql) {
-        sqlSessionTemplate.insert(className + ".ddlBySql", ParamsMap.newMap("dynSql", dynSql));
+    public int ddlBySql(String dynSql) {
+        return sqlSessionTemplate.insert(className + ".ddlBySql", ParamsMap.newMap("dynSql", dynSql));
     }
 
 @DataSource

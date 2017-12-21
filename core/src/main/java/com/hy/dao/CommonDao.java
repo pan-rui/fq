@@ -140,5 +140,14 @@ public class CommonDao {
         return sqlSessionTemplate.update(className + ".operateProductDiscuss", ParamsMap.newMap("operate", operate).addParams("userId", userId).addParams("id", id).addParams("index",index));
     }
 
+    public List<Map<String, Object>> queryAuditPageMul(final Page page) {
+    List<Map<String,Object>> resultList=sqlSessionTemplate.selectList(className + ".queryAuditPageMul", ParamsMap.newMap("page", page));
+    page.setResults(resultList);
+    return resultList;
+}
 
+public List<Map<String, Object>> queryCompanyIndex(final Page page) {
+    List<Map<String,Object>> resultList=sqlSessionTemplate.selectList(className + ".queryCompanyIndex",ParamsMap.newMap("page",page));
+    return resultList;
+}
 }

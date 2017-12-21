@@ -1,5 +1,6 @@
 package com.hy.action;
 
+import com.hy.annotation.EncryptProcess;
 import com.hy.base.BaseResult;
 import com.hy.base.ReturnCode;
 import com.hy.core.CacheKey;
@@ -12,6 +13,7 @@ import com.hy.dao.CommonDao;
 import com.hy.service.CommonService;
 import com.hy.service.UserService;
 import com.hy.util.ImageCode;
+import com.hy.util.JTUtil;
 import com.hy.vo.ParamsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 

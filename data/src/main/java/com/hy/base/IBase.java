@@ -28,6 +28,7 @@ public interface IBase {
     public static final SimpleDateFormat sdf2= new SimpleDateFormat("yyyyMMddHHmmss");
     public static final SimpleDateFormat dateSdf= new SimpleDateFormat("yyyy-MM-dd");
     public static final SimpleDateFormat dateSdf2= new SimpleDateFormat("yyyy/MM/dd");
+    public static final SimpleDateFormat dateSdf3= new SimpleDateFormat("yyyy-MM");
 
     default BaseResult getFormatError(BindingResult result) {
         List<FieldError> fields = result.getFieldErrors();

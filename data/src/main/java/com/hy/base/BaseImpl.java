@@ -238,6 +238,7 @@ public class BaseImpl implements IBase, ApplicationContextAware, InitializingBea
         Constants.jedisPool = this.jedisPool;
         Constants.applicationContext = this.applicationContext;
         Constants.config = (Properties) applicationContext.getBean("config");
+        Constants.baseDao = (BaseDao) applicationContext.getBean("baseDao");
         Constants.publicKey = Constants.getSystemStringValue("PUBLIC_KEY");
         initApplication();
     }

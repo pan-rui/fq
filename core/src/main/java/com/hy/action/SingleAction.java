@@ -109,6 +109,14 @@ public class SingleAction extends BaseAction {
         return new BaseResult(ReturnCode.OK, resultMap);
     }
 
+    /**
+     *  修改
+     * @param appVer
+     * @param uId
+     * @param tableName
+     * @param paramsVo
+     * @return
+     */
     @PutMapping("{tableName:[A-Za-z]+}/up")
     public BaseResult update(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Long uId, @PathVariable String tableName, @EncryptProcess ParamsVo paramsVo) {
         int size = baseDao.updateByProsInTab(Table.FQ + ColumnProcess.decryptVal(tableName), paramsVo.getParams().addParams(Table.UP_ID, uId).addParams(Table.UTIME, new Date()).addParams(Table.ID, paramsVo.getParams().remove(Table.ID)));

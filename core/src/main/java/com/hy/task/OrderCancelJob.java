@@ -45,7 +45,7 @@ public class OrderCancelJob implements Job,Runnable {
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("orderNo", orderNo);
                 jsonObject.addProperty("userId", userId);
-                JPushUtil.pushByRegId(JPushUtil.USER_APP, "您有一笔订单超过24小时未付款,系统已自动取消.","查看详情", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]);
+                JPushUtil.submitTask(()->JPushUtil.pushByRegId(JPushUtil.USER_APP+userId,"NOTIFY", "您有一笔订单超过24小时未付款,系统已自动取消.","查看详情", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));
         }
     }
 
@@ -54,14 +54,15 @@ public class OrderCancelJob implements Job,Runnable {
         List<Map<String, Object>> resultList = baseDao.queryByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "0").addParams(Table.Order.ORDER_NO.name(), orderNo));
         if(!CollectionUtils.isEmpty(resultList)) {
             int size = baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "8").addParams(Table.Order.ORDER_NO.name(), orderNo));
-            if (size > 0) {
+/*            if (size > 0) {
                 String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.USER_APP + userId);
                 if (StringUtils.isEmpty(appMeta)) return;
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("orderNo", orderNo);
                 jsonObject.addProperty("userId", userId);
                 JPushUtil.pushByRegId(JPushUtil.USER_APP, "您有一笔订单超过24小时未付款,系统已自动取消.", "查看详情", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]);
-            }
+            }*/
         }
     }
 }
+//待付款订单即将取消通知","您提交的订单【】2小时后将取消,赶紧前往支付吧!

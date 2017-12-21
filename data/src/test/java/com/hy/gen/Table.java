@@ -99,6 +99,8 @@ public class Table {
 	//
 	public static final String USER_INSURANCE="USER_INSURANCE";
 	//
+	public static final String USER_MESSAGE="USER_MESSAGE";
+	//
 	public static final String USER_NOTE="USER_NOTE";
 	//
 	public static final String t_admin="t_admin";
@@ -166,9 +168,10 @@ public class Table {
 	public enum AuditRecord{
 		ID,	//
 		USER_ID,	//受审用户ID
-		BIZ_TYPE,	//业务类型
-		AUDIT_TYPE,	//审核类型
-		AUDIT_STATUS,	//审核状态
+		BIZ_TYPE,	//业务类型("a":实名认证,"b":"商品上架","c":"门店入驻")
+		AUDIT_TYPE,	//审核类型("1":信息检查,"2":资产核验,"3":法律法规)
+		AUDIT_STATUS,	//审核状态("0":不通过,"1":通过","2":"待深入)
+		OPINION,	//审核意见:
 		CTIME,	//创建时间
 		AUDIT_ID,	//审核人ID
 		AUDIT_NAME,	//审核人姓名
@@ -192,6 +195,7 @@ public class Table {
 		LIST_PIC,	//品牌图片:用于列表显示；保存图片的名称
 		CONTENT,	//品牌介绍:图文结合方式，编辑器编辑
 		CLASSIFY_LIST_ID,	//分类ID列表
+		HOT_CLASSIFY,	//热门分类
 		CTIME,	//增加时间
 		IS_ENABLE,	//1正常 0停用
 		SEQ,	//排序
@@ -205,6 +209,8 @@ public class Table {
 		NAME,	//分类名称
 		PARENT_ID,	//上级分类ID
 		LEVEL,	//分类等级
+		HOT_BRANDS,	//热门品牌
+		HOT_CLASSIFY,	//热门分类
 		SEQ,	//排序
 		IS_ENABLE,	//状态,1:有效,0无效
 		PIC,	//分类图标
@@ -214,6 +220,7 @@ public class Table {
 	public enum Company{
 		ID,	//企业ID
 		COMPANY_NAME,	//企业名称
+		CODE_INDEX,	//索引
 		COMPANY_CODE,	//企业代码
 		COMPANY_TYPE,	//企业类型
 		COMPANY_COMMENT,	//企业简介
@@ -324,7 +331,7 @@ public class Table {
 		NAME,	//姓名
 		PHONE,	//手机
 		WORK_ID,	//工号
-		POST,	//岗位
+		POST,	//岗位("SALE":销售,"AUDIT":审核,"ADMIN":管理员,"EMP":"运营")
 		LEVEL,	//级别
 		CARD_NO,	//身份证号
 		CLIENT_SN,	//客户端序列号
@@ -546,6 +553,7 @@ public class Table {
 		USER_ID,	//用户ID
 		PRODUCT_NAME,	//商品名称
 		ORDER_ID,	//订单ID
+		CONTACT_ID,	//收件人ID
 		PICS,	//故障说明图集
 		CONTENT,	//故障描述
 		SALE_TYPE,	//
@@ -692,7 +700,7 @@ public class Table {
 		SOURCE,	//来源渠道
 		CLIENT_SN,	//客户端序列号
 		IS_ENABLE,	//状态 1:启用,0禁用
-		CERT_STATUS,	//实名认证状态:0待认证,1已认证,2认证失败,3一级审核，4.一级审核失败,5.二级审核,6二级审核失败,7二级审核通过
+		CERT_STATUS,	//实名认证状态:0待认证,1已认证,2认证失败,3一级审核，4.一级审核失败,5.一级通过待二级审核,6二级审核失败,7二级审核通过
 		PHONE,	//手机
 		PWD,	//登录密码
 		OSS_ID,	//照片地址
@@ -837,6 +845,17 @@ public class Table {
 		PRODUCT_NAME,	//
 		CTIME,	//
 		UTIME,	//
+	}
+
+	public enum UserMessage{
+		ID,	//
+		TITLE,	//
+		CONTENT,	//
+		TYPE,	//消息类型:SHIP,NOTIFY,TRADE,ACTIVITY,AUDIT
+		MSG_EXT,	//消息扩展信息
+		CTIME,	//
+		USER_ID,	//接收用户ID
+		TAGS,	//消息标签
 	}
 
 	public enum UserNote{

@@ -53,7 +53,7 @@ public class OrderAction extends BaseAction {
     @Autowired
     @Value("#{config['SHIPMENTS_KEY']}")
     private String SHIPMENTS_KEY;
-    private static final String orderCancelRemind = "ORDER_CANCEL_REMIND";
+    private static final String orderCancel = "ORDER_CANCEL";
     private static final Logger logger = LogManager.getLogger(OrderAction.class);
     private String tableName = Table.FQ + Table.ORDER;
 
@@ -238,7 +238,7 @@ public class OrderAction extends BaseAction {
      */
     @GetMapping("remainTime/{ctime:\\d+}")
     public BaseResult remainPayTime(@RequestHeader(Constants.USER_ID) Long uId, @PathVariable Long ctime) {
-        String delay2 = Constants.getSystemStringValue(orderCancelRemind);
+        String delay2 = Constants.getSystemStringValue(orderCancel);
         if (StringUtils.isEmpty(delay2)) delay2 = "0";
         return new BaseResult(ReturnCode.OK, ctime + Long.parseLong(delay2) - System.currentTimeMillis());
     }

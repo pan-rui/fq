@@ -44,9 +44,12 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +70,7 @@ public class CommonService {
     private String saleTable = Table.FQ + Table.EMPLOYEE;
     @Autowired
     private DataSourceTransactionManager transactionManager;
+    private DateFormat dateFormat = new SimpleDateFormat("yyyy年MM月");
     private static final Logger logger = LogManager.getLogger(CommonService.class);
 
     public BaseResult uploadImg(String appVer, String userId, String phone, MultipartFile file, String fileType) throws IOException {
@@ -104,12 +108,18 @@ public class CommonService {
         System.out.println("清除Tmp缓存....");
     }
 
+    @CacheEvict(value = "system", allEntries = true, cacheManager = "cacheManager")
+    public void resetSystemCache() {
+        baseImpl.initSystemData();
+        System.out.println("重围system缓存....");
+    }
+
     @Cacheable(value = "common", key = "'allLevel_'+#tableName")
     public List<Map<String, Object>> allMultilLevel(String tableName, ParamsMap<String, Object> params, String childrenField) {
         final List<Map<String, Object>> datas = baseDao.queryListInTab(tableName, params, null);
         List<Map<String, Object>> resultList = new LinkedList<Map<String, Object>>();
         for (Map<String, Object> data : datas) {
-            Long parentId = StringUtils.isEmpty(data.get("parentId")) ? 0l : Long.parseLong(String.valueOf(data.get("parentId")));
+            Long parentId = StringUtils.isEmpty(data.get("parentId")) ? 0L : Long.parseLong(String.valueOf(data.get("parentId")));
             if (parentId != 0L) {
                 for (Map<String, Object> pData : datas)
                     if (parentId.equals(pData.get("id"))) {
@@ -134,23 +144,24 @@ public class CommonService {
         String tradeType = bodyArr[0];
         try {
 //            transactionManager.commit(transStatus);
+            String payInfo=JSON.toJSONString(params);
             if (IPaymentService.TradeType.firstPay.name().equals(tradeType)) {
                 //更新订单信息及相关信息
                 //保存交易记录
-                ParamsMap paramsMap = ParamsMap.newMap(Table.Order.STATE.name(), "1").addParams(Table.Order.PAY_TIME.name(), payTime).addParams(Table.Order.PAY_NO.name(), payNo);
-                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1]).addParams(Table.TradeRecord.TRADE_AMOUNT.name(),amount)
-                        .addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo).addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(params)));
+                ParamsMap paramsMap = ParamsMap.newMap(Table.Order.STATE.name(), "1").addParams(Table.Order.PAY_TIME.name(), payTime).addParams(Table.Order.PAY_NO.name(), payNo).addParams(Table.Order.PAY_INFO.name(), payInfo);
+                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1]).addParams(Table.TradeRecord.TRADE_AMOUNT.name(), amount)
+                        .addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo).addParams(Table.TradeRecord.PAY_INFO.name(), payInfo));
                 baseDao.updateByProsInTab(Table.FQ + Table.ORDER, paramsMap.addParams(Table.ID, bodyArr[2]));
-                Map<String,Object> orderMap=baseDao.queryByIdInTab(Table.FQ + Table.ORDER, bodyArr[2]);
+                Map<String, Object> orderMap = baseDao.queryByIdInTab(Table.FQ + Table.ORDER, bodyArr[2]);
                 flag = genPlanRepay(orderMap);
                 Map<String, Object> userMap = baseDao.queryByIdInTab(userTable, bodyArr[1]);
-                Object inviterId=userMap.get("inviterId");
+                Object inviterId = userMap.get("inviterId");
                 if (!StringUtils.isEmpty(inviterId)) {
                     baseDao.insertByProsInTab(Table.FQ + Table.COUPON, ParamsMap.newMap(Table.Coupon.STATUS.name(), "2").addParams(Table.Coupon.REMARK.name(), bodyArr[1]).addParams(Table.Coupon.COUPON_ID.name(), "7").addParams(Table.Coupon.USER_ID.name(), inviterId));
                 }
-                sendWxMsg(RemoteProtocol.PAY_SUCCESS_MSG, ParamsMap.newMap("amount", amount+"元").addParams("user", userMap).addParams("order", orderMap));
+                sendWxMsg(RemoteProtocol.PAY_SUCCESS_MSG, ParamsMap.newMap("amount", amount + "元").addParams("user", userMap).addParams("order", orderMap));
             } else if (IPaymentService.TradeType.repay.name().equals(tradeType)) {
-                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1]).addParams(Table.TradeRecord.TRADE_AMOUNT.name(),amount)
+                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1]).addParams(Table.TradeRecord.TRADE_AMOUNT.name(), amount)
                         .addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.BILL_DATE.name(), bodyArr[2]).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo)
                         .addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(params)));
                 Map<String, Object> repayMap = baseDao.queryByIdInTab(Table.FQ + Table.PLAN_REPAYMENT, bodyArr[2]);
@@ -161,18 +172,23 @@ public class CommonService {
                     Long orderId = (Long) repayMap.get("orderId");
                     baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "10").addParams(Table.ID, orderId));           //更新订单状态
                     if (!StringUtils.isEmpty(appMeta)) {
-                        new Thread(() -> {
-                            JsonObject jsonObject = new JsonObject();
-                            jsonObject.addProperty("orderId", orderId);
-                            JPushUtil.pushByRegId(JPushUtil.USER_APP, "您有一笔融宝分期订单已全部还款完成.", "点击查看详情!", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]);
-                        }).start();
+                        Map<String, Object> productMap = baseDao.queryByIdInTab(Table.FQ + Table.PRODUCT, repayMap.get("productId"));
+                        JsonObject jsonObject = new JsonObject();
+                        jsonObject.addProperty("orderId", orderId);
+                        jsonObject.addProperty("payNo", payNo);
+//                            JPushUtil.submitTask(()->JPushUtil.pushByRegId(JPushUtil.USER_APP, "您有一笔融宝分期订单已全部还款完成.", "点击查看详情!", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));
+                        JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.USER_APP+bodyArr[1],"TRADE", "分期结束通知", "您购买的商品【" + productMap.get("name") + "】已完成" + repayMap.get("periodSum") + "期分期.", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));
                     }
                 }
                 if (!StringUtils.isEmpty(appMeta)) {
                     Calendar calendar = Calendar.getInstance();
+                    Date date = (Date) repayMap.get("planrepayDate");
+                    calendar.setTime(date);
                     JsonObject jsonObject = new JsonObject();
                     jsonObject.addProperty("repayId", bodyArr[2]);
-                    JPushUtil.pushByRegId(JPushUtil.USER_APP, "您" + calendar.get(Calendar.MONTH) + "月账单" + repayMap.get("planrepayMoney") + "元已还清!", "点击查看详情:", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]);   //TODO:AppMeta
+                    jsonObject.addProperty("payNo", payNo);
+//                    JPushUtil.submitTask(()->JPushUtil.pushByRegId(JPushUtil.USER_APP, "您" + calendar.get(Calendar.MONTH) + "月账单" + repayMap.get("planrepayMoney") + "元已还清!", "点击查看详情:", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));   //TODO:AppMeta
+                    JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.USER_APP+bodyArr[1],"TRADE", calendar.get(Calendar.MONTH) + "月账单还清通知", "您已按期还清" + dateFormat.format(date) + "账单" + repayMap.get("planrepayMoney") + "元,请继续保持哦!", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));   //TODO:AppMeta
                 }
 
             } else if (IPaymentService.TradeType.freeRepay.name().equals(tradeType)) {
@@ -185,7 +201,10 @@ public class CommonService {
                 List<Map<String, Object>> repayList = userDao.queryRepaysTab(bodyArr[1], bodyArr[2]);
 //                        Calendar calendar = Calendar.getInstance();
                 BigDecimal money = new BigDecimal(amount);
-                for (Map<String, Object> repayMap : repayList) {
+                List<Map<String, Object>> calcList = new ArrayList<>(repayList);
+                BigDecimal[] repayMoney = {BigDecimal.ZERO};
+                for (Iterator<Map<String, Object>> it = calcList.iterator(); it.hasNext(); ) {
+                    Map<String, Object> repayMap = it.next();
                     if (money.compareTo(BigDecimal.ZERO) <= 0) break;
                     ParamsMap upMap = ParamsMap.newMap(Table.PlanRepayment.UTIME.name(), calendar.getTime()).addParams(Table.PlanRepayment.REPAY_TYPE.name(), "freeRepay");
                     String status = (String) repayMap.get("status");
@@ -199,6 +218,8 @@ public class CommonService {
                             upMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), planrepayMoney);
                             upMap.addParams(Table.PlanRepayment.STATUS.name(), "1");
                             money = money.subtract(syRepay);
+                            it.remove();
+                            repayMoney[0] = repayMoney[0].add(syRepay);
                         } else {
                             upMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), realRepayMoney.add(money));
                             money = BigDecimal.ZERO;
@@ -215,10 +236,13 @@ public class CommonService {
                                 upMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), planrepayMoney);
                                 upMap.addParams(Table.PlanRepayment.STATUS.name(), "1");
                                 money = money.subtract(syRepay);
+                                it.remove();
+                                repayMoney[0] = repayMoney[0].add(syRepay);
                             } else {
                                 upMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), realRepayMoney.add(money));
                                 money = BigDecimal.ZERO;
                             }
+                            repayMoney[0] = repayMoney[0].add(syRepayOve);
                         } else {      //少于利息
                             upMap.addParams(Table.PlanRepayment.REAL_REPAY_INTEREST.name(), realRepayInterest.add(money));
                             money = BigDecimal.ZERO;
@@ -226,12 +250,27 @@ public class CommonService {
                     }
                     baseDao.updateByProsInTab(Table.FQ + Table.PLAN_REPAYMENT, upMap.addParams(Table.ID, repayMap.get("id")));
                 }
+                if (CollectionUtils.isEmpty(calcList)) {
+                    String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.USER_APP + bodyArr[1]);
+                    JsonObject jsonObject = new JsonObject();
+                    if (!StringUtils.isEmpty(appMeta)) {
+                        jsonObject.addProperty("repayId", bodyArr[2]);
+                        jsonObject.addProperty("payNo", payNo);
+//                    JPushUtil.submitTask(()->JPushUtil.pushByRegId(JPushUtil.USER_APP, "您" + calendar.get(Calendar.MONTH) + "月账单" + repayMap.get("planrepayMoney") + "元已还清!", "点击查看详情:", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));   //TODO:AppMeta
+                        JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.USER_APP+bodyArr[1], "TRADE",dateArr[1] + "月账单还清通知", "您已按期还清" + dateArr[0] + "年" + dateArr[1] + "月账单" + repayMoney[0].toString() + "元,请继续保持哦!", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));   //TODO:AppMeta
+                    }
+                    List<Map<String, Object>> repayList2 = userDao.queryUserRepaysTab(bodyArr[1], repayList);
+                    if (repayList2.isEmpty()) {
+                        Map<String, Object> productMap = baseDao.queryByIdInTab(Table.FQ + Table.PRODUCT, repayList.get(0).get("productId"));
+                        JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.USER_APP+bodyArr[1],"TRADE", "分期结束通知", "您购买的商品【" + productMap.get("name") + "】已完成" + repayList.get(0).get("periodSum") + "期分期.", jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
             flag = false;
 //            transactionManager.rollback(transStatus);
-                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         }
         return flag;
     }
@@ -247,12 +286,12 @@ public class CommonService {
 //                    Map<String, Object> periodMap = JSON.parseObject((String) orderMap.get("period"));
                 Map<String, Object> periodMap = (Map<String, Object>) itMap.get("period");
                 List<Integer> exemptMonList = (List<Integer>) periodMap.get("exemptMon");
-                Object exemptMoney =periodMap.get("exemptMoney");
-                Object addMonthlyObj =periodMap.get("addMonthly");
+                Object exemptMoney = periodMap.get("exemptMoney");
+                Object addMonthlyObj = periodMap.get("addMonthly");
 //                Integer exemptMon = StringUtils.isEmpty(exemptMonObj)?null:Integer.parseInt(String.valueOf(exemptMonObj));
-                BigDecimal addMonthly = StringUtils.isEmpty(addMonthlyObj)?null:new BigDecimal(String.valueOf(addMonthlyObj));
+                BigDecimal addMonthly = StringUtils.isEmpty(addMonthlyObj) ? null : new BigDecimal(String.valueOf(addMonthlyObj));
                 BigDecimal monthly = new BigDecimal(itMap.get("monthly").toString());
-                if(addMonthly!=null)
+                if (addMonthly != null)
                     monthly = monthly.add(addMonthly);
                 Long userId = (Long) orderMap.get("userId");
                 int period = Integer.parseInt(String.valueOf(periodMap.get("period")));
@@ -267,7 +306,7 @@ public class CommonService {
                             .addParams(Table.PlanRepayment.ORDER_ID.name(), orderMap.get("id"))
                             .addParams(Table.PlanRepayment.PRODUCT_ID.name(), periodMap.get("productId"))
                             .addParams(Table.PlanRepayment.PLANREPAY_DATE.name(), calendar.getTime())
-                            .addParams(Table.PlanRepayment.PLANREPAY_MONEY.name(),monthly )
+                            .addParams(Table.PlanRepayment.PLANREPAY_MONEY.name(), monthly)
                             .addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), BigDecimal.ZERO)
                             .addParams(Table.PlanRepayment.STATUS.name(), "0")      //0未还
                             .addParams(Table.PlanRepayment.REPAY_NUM.name(), i)
@@ -278,8 +317,8 @@ public class CommonService {
                         planRepayMap.addParams(Table.PlanRepayment.REAL_REPAY_MONEY.name(), new BigDecimal(String.valueOf(exemptMoney)));
                     }
 //                    if(exemptMon!=null && i<=exemptMon){
-                    if(!CollectionUtils.isEmpty(exemptMonList)){
-                        if(exemptMonList.contains(i))
+                    if (!CollectionUtils.isEmpty(exemptMonList)) {
+                        if (exemptMonList.contains(i))
                             planRepayMap.addParams(Table.PlanRepayment.STATUS.name(), "4").addParams(Table.PlanRepayment.REPAY_NO.name(), null);
                     }
                     srcList.add(planRepayMap);
@@ -309,13 +348,13 @@ public class CommonService {
             Map<String, Object> att = (Map<String, Object>) map.get(diffListField);
             int i = 0;
 //            if (attG.size() == att.size()) {
-                b:
-                for (String key : att.keySet()) {
-                    if (!attG.containsKey(key) || !attG.get(key).equals(att.get(key))) {
-                        break b;
-                    }
-                    i++;
+            b:
+            for (String key : att.keySet()) {
+                if (!attG.containsKey(key) || !attG.get(key).equals(att.get(key))) {
+                    break b;
                 }
+                i++;
+            }
 //            }
             if (i == att.size()) {
                 int size = Integer.parseInt(String.valueOf(dataMap.get("size")));
@@ -330,12 +369,12 @@ public class CommonService {
         Map<String, Object> userMap = (Map<String, Object>) params.get("user");
         if (StringUtils.isEmpty(userMap.get("openId"))) {
 
-        }else {
+        } else {
             BaseResult baseResult = JSON.parseObject(HttpUtil.execute(protocol, ParamsMap.newMap("params", params)), BaseResult.class);
             if (baseResult.getCode() != 0) {
                 try {
                     TimeUnit.MINUTES.sleep(5L);
-                    baseResult=JSON.parseObject(HttpUtil.execute(protocol, ParamsMap.newMap("params", params)),BaseResult.class);
+                    baseResult = JSON.parseObject(HttpUtil.execute(protocol, ParamsMap.newMap("params", params)), BaseResult.class);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

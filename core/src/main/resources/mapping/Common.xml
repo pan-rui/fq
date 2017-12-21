@@ -4,14 +4,14 @@
 
 <mapper namespace="com.hy.dao.CommonDao">
     <select id="queryUserInfoMul" parameterType="map" resultMap="info">
-SELECT u.*,c.* ,ud.* FROM fq.USER u
-  LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
-  LEFT JOIN fq.USER_DETAIL ud ON u.ID = ud.USER_ID
-WHERE 1=1
-<if test="userId != null"> AND u.ID=#{userId}</if>
-<if test="openId != null"> AND u.OPEN_ID=#{openId}</if>
-<!--<if test="openId != null"> AND u.OPEN_ID=#{openId} order by u.UTIME desc limit 1</if>-->
-	</select>
+        SELECT u.*,c.* ,ud.* FROM fq.USER u
+        LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        LEFT JOIN fq.USER_DETAIL ud ON u.ID = ud.USER_ID
+        WHERE 1=1
+        <if test="userId != null">AND u.ID=#{userId}</if>
+        <if test="openId != null">AND u.OPEN_ID=#{openId}</if>
+        <!--<if test="openId != null"> AND u.OPEN_ID=#{openId} order by u.UTIME desc limit 1</if>-->
+    </select>
     <resultMap id="info" type="map">
         <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
             <id property="id" column="id"/>
@@ -23,10 +23,10 @@ WHERE 1=1
             <id property="id" column="id"/>
         </association>
     </resultMap>
-<!--		SELECT u.*,c.*,ub.BANK_USER_NAME bankUserName,ub.BANK_MOBILE bankMobile,ub.BANK_CARD_NO bankCardNo FROM fq.USER u
-    LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
-    JOIN (SELECT BANK_CARD_NO,BANK_MOBILE,BANK_USER_NAME,USER_ID FROM fq.USER_BANK WHERE USER_ID=#{userId} ORDER BY CTIME LIMIT 1) ub ON u.ID=ub.USER_ID
--->
+    <!--		SELECT u.*,c.*,ub.BANK_USER_NAME bankUserName,ub.BANK_MOBILE bankMobile,ub.BANK_CARD_NO bankCardNo FROM fq.USER u
+        LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        JOIN (SELECT BANK_CARD_NO,BANK_MOBILE,BANK_USER_NAME,USER_ID FROM fq.USER_BANK WHERE USER_ID=#{userId} ORDER BY CTIME LIMIT 1) ub ON u.ID=ub.USER_ID
+    -->
     <select id="queryCJUserPageMul" resultMap="cjUserMap" parameterType="map">
         SELECT u.*,o.*,c.* FROM fq.USER u
         JOIN fq.ORDER o ON u.ID=o.USER_ID
@@ -263,7 +263,7 @@ WHERE 1=1
                 </foreach>
             </trim>
         </if>
-          order by u.CTIME desc
+        order by u.CTIME desc
     </select>
 
     <resultMap id="dshMap" type="map">
@@ -282,14 +282,14 @@ WHERE 1=1
 WHERE o.USER_ID=#{userId}
       AND o.STATE NOT IN ('0','6','8','9','10') order by o.CTIME
     </select>
-<resultMap id="billMap" type="java.util.LinkedHashMap" extends="orderMap">
-    <association property="delivery" javaType="map" columnPrefix="d_" autoMapping="true">
-        <id property="id" column="id"/>
-    </association>
-    <collection property="repayments" ofType="map" javaType="ArrayList" columnPrefix="pr_" autoMapping="true">
-        <id property="id" column="id"/>
-    </collection>
-</resultMap>
+    <resultMap id="billMap" type="java.util.LinkedHashMap" extends="orderMap">
+        <association property="delivery" javaType="map" columnPrefix="d_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <collection property="repayments" ofType="map" javaType="ArrayList" columnPrefix="pr_" autoMapping="true">
+            <id property="id" column="id"/>
+        </collection>
+    </resultMap>
     <resultMap id="orderMap" type="map">
         <id property="id" column="o_id"/>
         <result property="userId" column="o_userId"/>
@@ -313,21 +313,21 @@ WHERE o.USER_ID=#{userId}
         <result property="remark" column="o_remark"/>
     </resultMap>
     <select id="queryPerformanceMul" parameterType="map" resultMap="perform">
-select o.*,u.*,c.* FROM fq.ORDER o
-JOIN fq.USER u ON o.USER_ID=u.ID
-LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
-WHERE u.BIZER_ID=#{workId}  AND o.STATE IN ('0','1')
-<choose>
-    <when test="type == 1">
-        and DATE_FORMAT(o.CTIME,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
-    </when>
-    <when test="type ==2 ">
-        AND DATE_FORMAT(o.CTIME,'%Y-%m')=DATE_FORMAT(DATE_SUB(curdate(),INTERVAL 1 MONTH),'%Y-%m')
-    </when>
-    <otherwise>
-    and DATE_FORMAT(o.CTIME,'%Y-%m-%d')=CURDATE()
-    </otherwise>
-</choose>
+        select o.*,u.*,c.* FROM fq.ORDER o
+        JOIN fq.USER u ON o.USER_ID=u.ID
+        LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        WHERE u.BIZER_ID=#{workId} AND o.STATE IN ('0','1')
+        <choose>
+            <when test="type == 1">
+                and DATE_FORMAT(o.CTIME,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+            </when>
+            <when test="type ==2 ">
+                AND DATE_FORMAT(o.CTIME,'%Y-%m')=DATE_FORMAT(DATE_SUB(curdate(),INTERVAL 1 MONTH),'%Y-%m')
+            </when>
+            <otherwise>
+                and DATE_FORMAT(o.CTIME,'%Y-%m-%d')=CURDATE()
+            </otherwise>
+        </choose>
     </select>
     <resultMap id="perform" type="java.util.LinkedHashMap" extends="orderMap">
         <association property="user" javaType="map" columnPrefix="u_" autoMapping="true">
@@ -365,20 +365,20 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
         JOIN COUPON_DICT cd ON c.COUPON_ID=cd.ID
         WHERE c.STATUS='2' AND c.USER_ID=#{userId} AND cd.EXPIRE_DATE>current_timestamp() AND cd.IS_ENABLE=1;
     </select>
-<resultMap id="couponMap" type="map">
-    <association property="coupon" javaType="map" columnPrefix="c_" autoMapping="true">
-        <id property="id" column="id"/>
-    </association>
-    <association property="couponDict" javaType="map" columnPrefix="cd_" autoMapping="true">
-        <id property="id" column="id"/>
-    </association>
-</resultMap>
+    <resultMap id="couponMap" type="map">
+        <association property="coupon" javaType="map" columnPrefix="c_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+        <association property="couponDict" javaType="map" columnPrefix="cd_" autoMapping="true">
+            <id property="id" column="id"/>
+        </association>
+    </resultMap>
     <select id="queryHelpPageMul" parameterType="map" resultMap="helpContent">
         SELECT h.*,ht.* FROM fq.HELP h
         JOIN fq.HELP_TYPE ht ON h.TYPE_ID = ht.ID
         <trim prefix="where " prefixOverrides="or | and">
             <foreach collection="page.params" item="item" index="key" separator=" and ">
-                    ${key}=#{item}
+                ${key}=#{item}
             </foreach>
         </trim>
         order by ht.SEQ,h.SEQ
@@ -422,7 +422,9 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
 
     <!-- ORDER.STATE >= '5' 才可以评价 -->
     <select id="queryProductDiscussPageMul" parameterType="map" resultMap="productDiscuss">
-        select pd.*,u.NAME u_name,u.USER_NAME u_userName,u.NICKNAME u_nickName,u.OSS_ID u_ossId,JSON_EXTRACT(o.ITEMS,JSON_UNQUOTE(REPLACE(JSON_SEARCH(o.ITEMS,'one',pd.PRODUCT_ID,NULL,'$[*].id'),'id','attr'))) o_attr FROM fq.PRODUCT_DISCUSS pd
+        select pd.*,u.NAME u_name,u.USER_NAME u_userName,u.NICKNAME u_nickName,u.OSS_ID
+        u_ossId,JSON_EXTRACT(o.ITEMS,JSON_UNQUOTE(REPLACE(JSON_SEARCH(o.ITEMS,'one',pd.PRODUCT_ID,NULL,'$[*].id'),'id','attr')))
+        o_attr FROM fq.PRODUCT_DISCUSS pd
         JOIN fq.USER u ON pd.USER_ID=u.ID
         JOIN fq.ORDER o ON pd.ORDER_ID=o.ID
         WHERE 1=1
@@ -454,30 +456,101 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
     </select>
 
     <resultMap id="productDiscuss" type="java.util.LinkedHashMap">
-        <association property="user" javaType="map" columnPrefix="u_" autoMapping="true"></association>
-        <association property="productDiscuss" javaType="map" columnPrefix="pd_" autoMapping="true"></association>
-        <association property="order" javaType="map" columnPrefix="o_" autoMapping="true"></association>
+        <association property="user" javaType="map" columnPrefix="u_" autoMapping="true"/>
+        <association property="productDiscuss" javaType="map" columnPrefix="pd_" autoMapping="true"/>
+        <association property="order" javaType="map" columnPrefix="o_" autoMapping="true"/>
     </resultMap>
 
     <update id="operateProductDiscuss" parameterType="map">
         UPDATE fq.PRODUCT_DISCUSS
-         <trim prefix="set " prefixOverrides=",">
-          <choose>
-              <when test="operate == 0">
-                  OPPOSE_SIZE=OPPOSE_SIZE+1,OPPOSE=JSON_ARRAY_APPEND(OPPOSE,'$',#{userId})
-              </when>
-              <when test="operate == 1">
-                   APPROVED_SIZE=APPROVED_SIZE+1,APPOVED=JSON_ARRAY_APPEND(APPOVED,'$',#{userId})
-              </when>
-              <when test="operate == 2">
-                  OPPOSE_SIZE=OPPOSE_SIZE-1,OPPOSE=JSON_REMOVE(OPPOSE,CONCAT('$[',${index},']'))
-              </when>
-              <when test="operate == 3">
-                  APPROVED_SIZE=APPROVED_SIZE-1,APPOVED=JSON_REMOVE(APPOVED,CONCAT('$[',${index},']'))
-              </when>
-          </choose>
-         </trim>
+        <trim prefix="set " prefixOverrides=",">
+            <choose>
+                <when test="operate == 0">
+                    OPPOSE_SIZE=OPPOSE_SIZE+1,OPPOSE=JSON_ARRAY_APPEND(OPPOSE,'$',#{userId})
+                </when>
+                <when test="operate == 1">
+                    APPROVED_SIZE=APPROVED_SIZE+1,APPOVED=JSON_ARRAY_APPEND(APPOVED,'$',#{userId})
+                </when>
+                <when test="operate == 2">
+                    OPPOSE_SIZE=OPPOSE_SIZE-1,OPPOSE=JSON_REMOVE(OPPOSE,CONCAT('$[',${index},']'))
+                </when>
+                <when test="operate == 3">
+                    APPROVED_SIZE=APPROVED_SIZE-1,APPOVED=JSON_REMOVE(APPOVED,CONCAT('$[',${index},']'))
+                </when>
+            </choose>
+        </trim>
         WHERE ID=#{id}
     </update>
+
+    <select id="queryAuditPageMul" parameterType="map" resultMap="auditInfo">
+        SELECT u.*,c.* ,ud.*,ua.* FROM fq.USER u
+        JOIN fq.USER_ATTACH ua ON u.ID=ua.USER_ID
+        LEFT JOIN fq.COMPANY c ON u.COMPANY_ID=c.ID
+        LEFT JOIN fq.USER_DETAIL ud ON u.ID = ud.USER_ID
+        WHERE ua.ATTACH_TYPE in ('0','1','9')
+        <if test="null != page.params">
+            <trim prefix="" prefixOverrides="or | and">
+                <foreach collection="page.params" item="item" index="key" open="and " separator=" and ">
+                    <if test="null != item">
+                        ${key} in (${item})
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="(" close=")" separator=" or ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.orderMap">
+            <trim prefix="order by" prefixOverrides=",">
+                <foreach collection="page.orderMap" item="item" index="key" separator=",">
+                    <if test="null != item">${key} ${item}</if>
+                </foreach>
+            </trim>
+        </if>
+    </select>
+    <resultMap id="auditInfo" type="map">
+        <id property="uId" column="u_id"/>
+        <association property="user" javaType="map" columnPrefix="u_" autoMapping="true"/>
+        <association property="userDetail" javaType="map" columnPrefix="ud_" autoMapping="true"/>
+        <association property="company" javaType="map" columnPrefix="c_" autoMapping="true"/>
+        <collection property="userAttachs" ofType="map" javaType="ArrayList" columnPrefix="ua_" autoMapping="true"/>
+    </resultMap>
+
+    <select id="queryCompanyIndex" parameterType="map" resultType="map">
+        select c.CODE_INDEX,group_concat(c.COMPANY_NAME order by c.COMPANY_CODE) names,group_concat(c.ID order by c.COMPANY_CODE) ids FROM fq.COMPANY c
+        WHERE c.IS_ENABLE =1
+        <if test="null != page.params">
+            <trim prefix="" prefixOverrides="or | and">
+                <foreach collection="page.params" item="item" index="key" open="and " separator=" and ">
+                    <if test="null != item">
+                        ${key} in (${item})
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.matchs">
+            <trim prefix="and" prefixOverrides="or | and">
+                <foreach collection="page.matchs" item="item" index="key" open="(" close=")" separator=" or ">
+                    <if test="null != item">
+                        ${key} LIKE '%${item}%'
+                    </if>
+                </foreach>
+            </trim>
+        </if>
+        <if test="null != page.orderMap">
+            <trim prefix="order by" prefixOverrides=",">
+                <foreach collection="page.orderMap" item="item" index="key" separator=",">
+                    <if test="null != item">${key} ${item}</if>
+                </foreach>
+            </trim>
+        </if>
+        GROUP BY c.CODE_INDEX
+    </select>
 
 </mapper>
