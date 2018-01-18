@@ -31,4 +31,6 @@ public class CacheKey {
 
     public static final String APP_META="APP_META";
 
+    public static final String EVERY_DAY_LOGIN= "EVERY_DAY_LOGIN";
+
 }

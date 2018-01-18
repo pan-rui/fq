@@ -14,6 +14,8 @@ public class Table {
 	public static final String UTIME = "UTIME";
 	public static final String DESC = "DESC";
 	public static final String ASC = "ASC";
+	public static final String TYPE = "TYPE";
+	public static final String REMARK = "REMARK";
 	//
 	public static final String ACCOUNT="ACCOUNT";
 	//
@@ -34,6 +36,8 @@ public class Table {
 	public static final String COUPON="COUPON";
 	//
 	public static final String COUPON_DICT="COUPON_DICT";
+	//
+	public static final String COUPON_RECORD="COUPON_RECORD";
 	//
 	public static final String C_POSITION_SERIES="C_POSITION_SERIES";
 	//
@@ -252,8 +256,20 @@ public class Table {
 		COND,	//{"limit(条件)": {"money(消费金额)": 3999, "insure(险种)": ["bx1"], "buyNum(第几次购买)": 2, "period(期数)": 12}, "discounts(优惠项)": {"inst(保险费,0为免保险费)": 0, "rate(分期利率,0为免息)": 0,"exemptMon(免月供数)":2,"exemptMoney(首月供减免":100}}
 		IS_ENABLE,	//状态{"1":"启用","0":"禁用"}
 		IS_WITHDRAW,	//允许提现{"1":"是","0":"否"}
-		COUPON_TYPE,	//类型{"a":"红包","b":"推荐奖励","c":"现金券","e":"免费券","d":"免息券","e":"话费券","x":"优惠活动"}
+		COUPON_TYPE,	//类型{"a":"红包","b":"推荐奖励","c":"现金券","e":"免费券","d":"免息券","f":"话费券","x":"优惠活动"}
 		EXPIRE_DATE,	//过期时间
+	}
+
+	public enum CouponRecord{
+		ID,	//
+		USER_ID,	//
+		COUPON_ID,	//
+		COUPON_TYPE,	//类型{"a":"红包","b":"推荐奖励","c":"现金券","e":"免费券","d":"免息券","f":"话费券","x":"优惠活动"}
+		STEP,	//状态{"1":"未领取","2","领取未使用","3":"已使用","4":"未领取过期","5":"未使用过期","6":"处理中"}
+		REMARK,	//
+		CTIME,	//
+		UP_ID,	//
+		UTIME,	//
 	}
 
 	public enum CPositionSeries{
@@ -364,6 +380,7 @@ public class Table {
 		ANSWER,	//答案
 		TYPE_ID,	//帮助类型ID
 		SEQ,	//排序
+		CLICK,	//点击次数
 		URL,	//文件路径
 		CTIME,	//创建时间
 	}
@@ -598,8 +615,10 @@ public class Table {
 		ID,	//ID
 		ORDER_ID,	//订单ID或还款ID
 		USER_ID,	//用户ID
+		TYPE,	//'0'消费,'1'赚取,'2'兑换
 		PRODUCT_ID,	//商品ID
 		USE_SCORE,	//使用积分
+		REMARK,	//备注
 		CTIME,	//增加时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间
@@ -668,7 +687,7 @@ public class Table {
 
 	public enum TradeRecord{
 		ID,	//ID
-		TRADE_TYPE,	//交易类型:{"firstPay":"首付","freeRepay":"自由还款","repay":"按期还款"}
+		TRADE_TYPE,	//交易类型:{"firstPay":"首付","freeRepay":"自由还款","repay":"按期还款","packet-ref":"推荐注册","packet-buy":"推荐购买","recharge":"余额充值","withdraw":"余额提现","consume":"余额消费","rechargeD":"金豆充值","withdrawD":"金豆兑换","consumeD":"金豆消费","earnD":"金豆赚取"}
 		ACCT_TIME,	//交易时间
 		USER_ID,	//用户ID
 		PRODUCT_ID,	//商品ID
@@ -679,6 +698,7 @@ public class Table {
 		TRADE_NO,	//交易流水号
 		PAY_INFO,	//交易详情
 		BILL_DATE,	//计划还款日期
+		REMARK,	//备注
 		CTIME,	//增加时间
 		UP_ID,	//修改人
 		UTIME,	//修改时间
@@ -853,8 +873,11 @@ public class Table {
 		CONTENT,	//
 		TYPE,	//消息类型:SHIP,NOTIFY,TRADE,ACTIVITY,AUDIT
 		MSG_EXT,	//消息扩展信息
+		IS_READED,	//已读:0否,1是
 		CTIME,	//
 		USER_ID,	//接收用户ID
+		UP_ID,	//更新人ID
+		UTIME,	//
 		TAGS,	//消息标签
 	}
 

@@ -1,9 +1,11 @@
 package com.hy.action;
 
 import com.alibaba.fastjson.JSON;
+import com.google.gson.JsonObject;
 import com.hy.annotation.EncryptProcess;
 import com.hy.base.BaseResult;
 import com.hy.base.ReturnCode;
+import com.hy.core.CacheKey;
 import com.hy.core.Constants;
 import com.hy.core.Page;
 import com.hy.core.ParamsMap;
@@ -13,6 +15,7 @@ import com.hy.dao.UserDao;
 import com.hy.service.CommonService;
 import com.hy.service.OrderService;
 import com.hy.service.pay.Pay;
+import com.hy.util.JPushUtil;
 import com.hy.util.JuheUtil;
 import com.hy.vo.ParamsVo;
 import com.hy.vo.RemoteProtocol;
@@ -260,6 +263,8 @@ public class OrderAction extends BaseAction {
                 String number = String.valueOf(map.get("number"));
                 String logistics = (String) map.get("logistics");
                 String orderId = String.valueOf(map.get("orderId"));
+                String userId = String.valueOf(map.get("userId"));
+                String productName = String.valueOf(map.get("productName"));
                 Map param = ParamsMap.newMap("company", logistics).addParams("number", number).addParams("key", SHIPMENTS_KEY).addParams("parameters", ParamsMap.newMap("callbackurl", "http://58.61.142.74:1000/consumer/single/shipCall?orderId=" + orderId)).addParams("autoCom", "1").addParams("resultv2", "1");
 //                Map<String, Object> resultMap = JSON.parseObject(HttpUtil.execute(RemoteProtocol.SHIPMENTS, ParamsMap.newMap("schema", "json").addParams("param", JSON.toJSONString(param))), Map.class);
                 Map<String, Object> resultMap = null;
@@ -271,6 +276,16 @@ public class OrderAction extends BaseAction {
                 if (!CollectionUtils.isEmpty(resultMap) && (Boolean) resultMap.get("result")) {
                     count[0] += baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "2").addParams(Table.Order.LOGISTICS.name(), logistics).addParams(Table.Order.LOGISTICS_CODE.name(), number)
                             .addParams(Table.Order.SHIPMENTS_TIME.name(), new Date()).addParams(Table.ID, orderId));
+                }
+                String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.USER_APP +userId);
+                if(!StringUtils.isEmpty(appMeta)) {
+                    Map<String, Object> orderMap = baseDao.queryByIdInTab(Table.FQ+Table.ORDER,orderId);
+                    JsonObject jsonObject = new JsonObject();
+                    jsonObject.addProperty("logisticsCode", number);
+                    jsonObject.addProperty("orderId", orderId);
+                    jsonObject.addProperty("orderNo", (String)orderMap.get("orderNo"));
+                    jsonObject.addProperty("items", (String)orderMap.get("items"));
+                    JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.USER_APP + userId, "SHIP", "订单已发货", productName, jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]));
                 }
             });
             return count[0] == datas.size() ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL, count[0]);

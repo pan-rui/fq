@@ -14,31 +14,23 @@ import com.hy.dao.BaseDao;
 import com.hy.dao.ProductDao;
 import com.hy.dao.UserDao;
 import com.hy.service.pay.IPaymentService;
-import com.hy.util.FtpUtil;
+import com.hy.service.pay.Pay;
 import com.hy.util.HttpUtil;
 import com.hy.util.ImgUtil;
 import com.hy.util.JPushUtil;
-import com.hy.util.JTUtil;
-import com.hy.util.SendMail;
 import com.hy.vo.RemoteProtocol;
 import org.apache.commons.lang.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -110,7 +102,7 @@ public class CommonService {
 
     @CacheEvict(value = "system", allEntries = true, cacheManager = "cacheManager")
     public void resetSystemCache() {
-        baseImpl.initSystemData();
+        baseImpl.initApplication();
         System.out.println("重围system缓存....");
     }
 
@@ -149,21 +141,35 @@ public class CommonService {
                 //更新订单信息及相关信息
                 //保存交易记录
                 ParamsMap paramsMap = ParamsMap.newMap(Table.Order.STATE.name(), "1").addParams(Table.Order.PAY_TIME.name(), payTime).addParams(Table.Order.PAY_NO.name(), payNo).addParams(Table.Order.PAY_INFO.name(), payInfo);
-                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1]).addParams(Table.TradeRecord.TRADE_AMOUNT.name(), amount)
-                        .addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo).addParams(Table.TradeRecord.PAY_INFO.name(), payInfo));
+                baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1])
+                        .addParams(Table.TradeRecord.TRADE_AMOUNT.name(), amount).addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo)
+                        .addParams(Table.TradeRecord.PAY_INFO.name(), payInfo).addParams(Table.TradeRecord.SOURCE.name(), Pay.getPayType().get(payType)));
                 baseDao.updateByProsInTab(Table.FQ + Table.ORDER, paramsMap.addParams(Table.ID, bodyArr[2]));
                 Map<String, Object> orderMap = baseDao.queryByIdInTab(Table.FQ + Table.ORDER, bodyArr[2]);
                 flag = genPlanRepay(orderMap);
                 Map<String, Object> userMap = baseDao.queryByIdInTab(userTable, bodyArr[1]);
                 Object inviterId = userMap.get("inviterId");
                 if (!StringUtils.isEmpty(inviterId)) {
-                    baseDao.insertByProsInTab(Table.FQ + Table.COUPON, ParamsMap.newMap(Table.Coupon.STATUS.name(), "2").addParams(Table.Coupon.REMARK.name(), bodyArr[1]).addParams(Table.Coupon.COUPON_ID.name(), "7").addParams(Table.Coupon.USER_ID.name(), inviterId));
+                    List<Map<String, Object>> results = baseDao.queryByS("select ID from fq.ORDER where ID=" + bodyArr[1] + " and STATE not in ('0')");
+                    if(results.size()==1) {
+                        String couponId=Double.parseDouble(amount)>=3000?"12":"11";
+                        baseDao.insertByProsInTab(Table.FQ + Table.COUPON, ParamsMap.newMap(Table.Coupon.STATUS.name(), "2").addParams(Table.Coupon.REMARK.name(), bodyArr[1])
+                                .addParams(Table.Coupon.COUPON_ID.name(),couponId ).addParams(Table.Coupon.USER_ID.name(), inviterId));
+                        baseDao.insertByProsInTab(Table.FQ + Table.COUPON_RECORD, ParamsMap.newMap(Table.CouponRecord.COUPON_ID.name(), couponId).addParams(Table.CouponRecord.COUPON_TYPE.name(), "a")
+                                .addParams(Table.CouponRecord.USER_ID.name(), inviterId).addParams(Table.CouponRecord.STEP.name(), "2").addParams(Table.CouponRecord.REMARK.name(),"推荐购买获得红包"));
+                    }
+//                    List<Map<String,Object>> accountMap=baseDao.queryByProsInTab(Table.FQ + Table.ACCOUNT, ParamsMap.newMap(Table.USER_ID, inviterId));
+/*                    baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), "packet-ref")
+                            .addParams(Table.TradeRecord.ACCT_TIME.name(),new Date()).addParams(Table.USER_ID, inviterId).addParams(Table.TradeRecord.PRODUCT_ID.name(), "7").addParams(Table.TradeRecord.SOURCE.name(),accountMap.get(0).get("id"))
+                    .addParams(Table.TradeRecord.TRADE_AMOUNT.name(),150.0d).addParams(Table.TradeRecord.ORDER_NO.name(),bodyArr[2]).addParams(Table.TradeRecord.PAY_INFO.name(),orderMap.get("items")).addParams(Table.UP_ID,bodyArr[1])
+                            .addParams(Table.TradeRecord.SOURCE.name(),Pay.getPayType().get(payType)));*/
+                    //TODO:现金奖励
                 }
                 sendWxMsg(RemoteProtocol.PAY_SUCCESS_MSG, ParamsMap.newMap("amount", amount + "元").addParams("user", userMap).addParams("order", orderMap));
             } else if (IPaymentService.TradeType.repay.name().equals(tradeType)) {
                 baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), tradeType).addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1]).addParams(Table.TradeRecord.TRADE_AMOUNT.name(), amount)
                         .addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.BILL_DATE.name(), bodyArr[2]).addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo)
-                        .addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(params)));
+                        .addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(params)).addParams(Table.TradeRecord.SOURCE.name(),Pay.getPayType().get(payType)));
                 Map<String, Object> repayMap = baseDao.queryByIdInTab(Table.FQ + Table.PLAN_REPAYMENT, bodyArr[2]);
                 long diffSecond = System.currentTimeMillis() - ((Date) repayMap.get("planrepayDate")).getTime();
                 baseDao.updateByProsInTab(Table.FQ + Table.PLAN_REPAYMENT, ParamsMap.newMap(Table.PlanRepayment.STATUS.name(), diffSecond > 0 ? "1" : "2").addParams(Table.PlanRepayment.PAY_DATE, new Date()).addParams(Table.ID, bodyArr[2]));
@@ -195,7 +201,7 @@ public class CommonService {
                 Calendar calendar = Calendar.getInstance();
                 String[] dateArr = bodyArr[2].split(Table.SEPARATE_CACHE);
                 baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.TradeRecord.TRADE_TYPE.name(), "freeRepay").addParams(Table.TradeRecord.ACCT_TIME.name(), payTime).addParams(Table.USER_ID, bodyArr[1])
-                        .addParams(Table.TradeRecord.TRADE_AMOUNT, amount).addParams(Table.TradeRecord.PAY_TYPE.name(), payType)
+                        .addParams(Table.TradeRecord.TRADE_AMOUNT, amount).addParams(Table.TradeRecord.PAY_TYPE.name(), payType).addParams(Table.TradeRecord.SOURCE.name(),Pay.getPayType().get(payType))
                         .addParams(Table.TradeRecord.BILL_DATE.name(), new Calendar.Builder().setDate(Integer.parseInt(dateArr[0]), Integer.parseInt(dateArr[1]) - 1, calendar.get(Calendar.DAY_OF_MONTH)).build().getTime())
                         .addParams(Table.TradeRecord.ORDER_NO.name(), orderNo).addParams(Table.TradeRecord.TRADE_NO.name(), payNo).addParams(Table.TradeRecord.PAY_INFO.name(), JSON.toJSONString(params)));
                 List<Map<String, Object>> repayList = userDao.queryRepaysTab(bodyArr[1], bodyArr[2]);

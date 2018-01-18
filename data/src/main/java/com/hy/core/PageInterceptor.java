@@ -65,24 +65,24 @@ public class PageInterceptor implements Interceptor {
         if (sqlId.matches(upSql)) {
             Object obj = boundSql.getParameterObject();
             Integer size = (Integer) ((Map) obj).get("size");
-            if(size==null||size==0)
-            updateProcess(boundSql);
-            else{
-                updateProcess(boundSql,size);
+            if (size == null || size == 0)
+                updateProcess(boundSql);
+            else {
+                updateProcess(boundSql, size);
             }
-            return invocation.proceed();
+//            return invocation.proceed();
         } else if (sqlId.matches(encryptSql)) {
             encryptProcess(boundSql);
-            if (sqlId.matches(pageSql)) {
+/*            if (sqlId.matches(pageSql)) {
                 pageProcess(invocation, delegate, boundSql);
-            }
-            return invocation.proceed();
+            }*/
+//            return invocation.proceed();
         } else if (sqlId.matches(mulitEncryptSql)) {
             encryptPro(boundSql);
-            if (sqlId.matches(pageSql)) {
-                pageProcess(invocation, delegate, boundSql);
-            }
-            return invocation.proceed();
+//            return invocation.proceed();
+        }
+        if (sqlId.matches(pageSql)) {
+            pageProcess(invocation, delegate, boundSql);
         }
         return invocation.proceed();
     }
@@ -97,7 +97,7 @@ public class PageInterceptor implements Interceptor {
             Connection connection = (Connection) invocation.getArgs()[0];
             //获取当前要执行的sql语句
             String sql = boundSql.getSql();
-            this.setTotalRecord((Map)obj, mappedStatement, connection, sql);
+            this.setTotalRecord((Map) obj, mappedStatement, connection, sql);
             String pageSql = this.getPageSql(page, sql);
             Constants.ReflectUtil.setFieldValue(boundSql, "sql", pageSql);
 //            Constants.ReflectUtil.setFieldValue(boundSql, "parameterObject", page.getParams());
@@ -159,25 +159,25 @@ public class PageInterceptor implements Interceptor {
             Constants.ReflectUtil.setFieldValue(boundSql, "sql", sql.substring(0, suffix) + " where " + sql.substring(suffix + 1));
     }
 
-    public void updateProcess(final BoundSql boundSql,int size) {
+    public void updateProcess(final BoundSql boundSql, int size) {
         String sql = boundSql.getSql();
-        String inte =",";
+        String inte = ",";
         String[] sqlArr = sql.split(inte);
-        Assert.isTrue(size<sqlArr.length,"SQL UPDATE cond size error:"+sql);
+        Assert.isTrue(size < sqlArr.length, "SQL UPDATE cond size error:" + sql);
         StringBuffer sqlSB = new StringBuffer();
-        int tok=sqlArr.length-size-1;
-        for(int i=0;i<sqlArr.length;i++) {
-            if(i<tok)
+        int tok = sqlArr.length - size - 1;
+        for (int i = 0; i < sqlArr.length; i++) {
+            if (i < tok)
                 sqlSB.append(sqlArr[i]).append(inte);
             else if (i == tok) {
                 sqlSB.append(sqlArr[i]).append(" where ");
-            }else if(i==sqlArr.length-1){
+            } else if (i == sqlArr.length - 1) {
                 sqlSB.append(sqlArr[i]);
-            }else{
+            } else {
                 sqlSB.append(sqlArr[i]).append(" and ");
             }
         }
-            Constants.ReflectUtil.setFieldValue(boundSql, "sql", sqlSB.toString());
+        Constants.ReflectUtil.setFieldValue(boundSql, "sql", sqlSB.toString());
     }
 
     @Override
@@ -194,16 +194,17 @@ public class PageInterceptor implements Interceptor {
         this.mulitEncryptSql = properties.getProperty("mulitEncryptSql");
     }
 
-    private void setTotalRecord(Map<String,Object> paramsObj, MappedStatement mappedStatement, Connection connection, String eSql) {
+    private void setTotalRecord(Map<String, Object> paramsObj, MappedStatement mappedStatement, Connection connection, String eSql) {
         BoundSql boundSql = mappedStatement.getBoundSql(paramsObj);
 //        String sql = boundSql.getSql();
         String countSql = "select count(1) from (" + eSql + ") as total";
         List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
 //        BoundSql countBoundSql = new BoundSql(mappedStatement.getConfiguration(), countSql, parameterMappings, paramsObj.get("page"));
         BoundSql countBoundSql = new BoundSql(mappedStatement.getConfiguration(), countSql, parameterMappings, paramsObj);
-        parameterMappings.forEach((mapping)->{
+        parameterMappings.forEach((mapping) -> {
             String prop = mapping.getProperty();
-            if(boundSql.hasAdditionalParameter(prop)) countBoundSql.setAdditionalParameter(prop,boundSql.getAdditionalParameter(prop));
+            if (boundSql.hasAdditionalParameter(prop))
+                countBoundSql.setAdditionalParameter(prop, boundSql.getAdditionalParameter(prop));
         });
         ParameterHandler parameterHandler = new DefaultParameterHandler(mappedStatement, paramsObj, countBoundSql);
         PreparedStatement pstmt = null;

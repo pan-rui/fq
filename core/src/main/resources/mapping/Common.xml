@@ -305,6 +305,7 @@ WHERE o.USER_ID=#{userId}
         <result property="payTime" column="o_payTime"/>
         <result property="discount" column="o_discount"/>
         <result property="scoreMoney" column="o_scoreMoney"/>
+        <result property="preferential" column="o_preferential"/>
         <result property="bill" column="o_bill"/>
         <result property="items" column="o_items"/>
         <result property="monthly" column="o_monthly"/>
@@ -396,7 +397,7 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
     </resultMap>
 
     <select id="queryRepayRecordTab" parameterType="map" resultType="map">
-        SELECT * FROM fq.TRADE_RECORD tr WHERE  tr.PAY_TYPE != 'firstPay' and tr.USER_ID=#{userId} and date_format(tr.BILL_DATE,'%Y-%m')=#{date}
+        SELECT * FROM fq.TRADE_RECORD tr WHERE  tr.TRADE_TYPE IN ('freeRepay','repay') and tr.USER_ID=#{userId} and date_format(tr.BILL_DATE,'%Y-%m')=#{date}
     </select>
 
     <select id="queryUserInsurancdPageMul" parameterType="map" resultMap="userInsurance">
@@ -523,7 +524,8 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
     </resultMap>
 
     <select id="queryCompanyIndex" parameterType="map" resultType="map">
-        select c.CODE_INDEX,group_concat(c.COMPANY_NAME order by c.COMPANY_CODE) names,group_concat(c.ID order by c.COMPANY_CODE) ids FROM fq.COMPANY c
+        select c.CODE_INDEX,group_concat(c.COMPANY_NAME order by c.COMPANY_CODE) names,group_concat(c.ID order by
+        c.COMPANY_CODE) ids FROM fq.COMPANY c
         WHERE c.IS_ENABLE =1
         <if test="null != page.params">
             <trim prefix="" prefixOverrides="or | and">
@@ -553,4 +555,50 @@ WHERE pr.STATUS='0' AND DATEDIFF(pr.PLANREPAY_DATE,CURDATE())=#{interval}
         GROUP BY c.CODE_INDEX
     </select>
 
+    <select id="queryUserExpByMonth" parameterType="map" resultType="map">
+    select IFNULL(sum(TRADE_AMOUNT),0) totalAmount FROM fq.TRADE_RECORD tr WHERE USER_ID=#{userId} AND (TRADE_TYPE IN ('withdraw','consume') or PAY_TYPE='3') AND DATE_FORMAT(ACCT_TIME,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+</select>
+
+    <select id="queryUserEarnByMonth" parameterType="map" resultType="map">
+        select IFNULL(sum(TRADE_AMOUNT),0) totalAmount FROM fq.TRADE_RECORD tr WHERE USER_ID=#{userId} AND TRADE_TYPE in ('recharge','withdrawD') and DATE_FORMAT(ACCT_TIME,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+    </select>
+
+    <select id="queryUserScoreEarnByMonth" parameterType="map" resultType="map">
+        select IFNULL(sum(TRADE_AMOUNT),0) totalAmount FROM fq.TRADE_RECORD tr WHERE USER_ID=#{userId} AND TRADE_TYPE IN ('earnD') AND DATE_FORMAT(CTIME,'%Y-%m-%d')=DATE_FORMAT(CURDATE(),'%Y-%m-%d')
+    </select>
+
+    <select id="queryUserScoreConv" parameterType="map" resultType="map">
+        select IFNULL(sum(TRADE_AMOUNT),0) totalAmount FROM fq.TRADE_RECORD tr WHERE USER_ID=#{userId} AND TRADE_TYPE IN ('withdrawD')
+    </select>
+
+    <select id="queryBalanceAllTab" parameterType="map" resultType="map">
+        SELECT * FROM fq.TRADE_RECORD tr WHERE (tr.TRADE_TYPE in ('recharge','withdraw','consume','withdrawD') OR tr.PAY_TYPE='3') and tr.USER_ID=#{userId}
+    </select>
+    <select id="queryBalanceExpTab" parameterType="map" resultType="map">
+        SELECT * FROM fq.TRADE_RECORD tr WHERE (tr.TRADE_TYPE in ('withdraw','consume') OR tr.PAY_TYPE='3') and tr.USER_ID=#{userId}
+    </select>
+    <select id="queryBalanceEarnTab" parameterType="map" resultType="map">
+        SELECT * FROM fq.TRADE_RECORD tr WHERE tr.TRADE_TYPE in ('recharge','withdrawD') AND tr.USER_ID=#{userId}
+    </select>
+    <select id="queryInviterInfoPage" parameterType="map" resultType="map">
+        SELECT u.PHONE phone,IFNULL(so.MONEY,0) money,s.amount FROM fq.USER u
+JOIN (select c.REMARK,sum(cd.COUPON_AMOUNT) amount FROM fq.COUPON c JOIN fq.COUPON_DICT cd ON c.COUPON_ID=cd.ID GROUP BY c.REMARK) s ON s.REMARK=u.ID
+LEFT JOIN (select o.USER_ID,o.MONEY from fq.ORDER o limit 1) so ON so.USER_ID=u.ID
+WHERE u.INVITER_ID=#{userId}
+    </select>
+    <select id="queryRedBagRecordPageMul" parameterType="map" resultMap="redBagRecord">
+        SELECT cr.*,cd.* FROM fq.COUPON_RECORD cr JOIN fq.COUPON_DICT cd ON cr.COUPON_ID=cd.ID
+        <trim prefix="where " prefixOverrides="or | and">
+            <foreach collection="page.params" item="item" index="key" separator=" and ">
+                <if test="null != item">
+                    ${key}=#{item}
+                </if>
+            </foreach>
+        </trim>
+    </select>
+    <resultMap id="redBagRecord" type="java.util.LinkedHashMap">
+        <id property="recordId" column="cr_id"/>
+        <association property="record" javaType="map" columnPrefix="cr_" autoMapping="true"/>
+        <association property="coupon" javaType="map" columnPrefix="cd_" autoMapping="true"/>
+    </resultMap>
 </mapper>

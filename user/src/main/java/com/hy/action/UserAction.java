@@ -3,6 +3,7 @@ package com.hy.action;
 import com.hy.annotation.EncryptProcess;
 import com.hy.base.BaseResult;
 import com.hy.base.ReturnCode;
+import com.hy.core.Base64;
 import com.hy.core.CacheKey;
 import com.hy.core.Constants;
 import com.hy.core.ParamsMap;
@@ -14,6 +15,7 @@ import com.hy.intercept.TokenInterceptor;
 import com.hy.service.UserService;
 import com.hy.util.ImageCode;
 import com.hy.vo.ParamsVo;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
@@ -43,6 +45,8 @@ public class UserAction extends BaseAction {
     private BaseDao baseDao;
     @Autowired
     private UserDao userDao;
+    @Autowired
+    private CommonAction commonAction;
     private String tableName = Table.FQ + Table.USER;
 
     @PostMapping("add")
@@ -54,35 +58,75 @@ public class UserAction extends BaseAction {
             return new BaseResult(103, "短信验证码错误");
         List<Map<String, Object>> users = baseDao.queryByProsInTab(tableName, ParamsMap.newMap(Table.User.PHONE.name(), phone));
         if (!CollectionUtils.isEmpty(users)) return new BaseResult(333, "该手机号已注册");
-        String userName=phone+Table.SEPARATE_CACHE+ImageCode.getPartSymbol(6);
+        String userName = phone + Table.SEPARATE_CACHE + ImageCode.getPartSymbol(6);
         map.put(Table.User.USER_NAME.name(), userName);        //默认用户名
-        map.put(Table.User.NICKNAME.name(),userName );        //默认昵称
-        if(StringUtils.isEmpty(map.get(Table.User.BIZER_ID.name())))
+        map.put(Table.User.NICKNAME.name(), userName);        //默认昵称
+        if (StringUtils.isEmpty(map.get(Table.User.BIZER_ID.name())))
             map.put(Table.User.BIZER_ID.name(), 1088);      //运营人员
         int result = userService.addUser(map.addParams(Table.User.TYPE.name(), "User"));
         if (result > 0) {
 //            Constants.setCache(CacheKey.U_SN_Prefix + phone, (String) map.get(Table.User.CLIENT_SN.name()));        //TODO:更新用户表CLIENT_SN字段时缓存起来
-            return new BaseResult(ReturnCode.OK,map);
+            return new BaseResult(ReturnCode.OK, map);
+        } else return new BaseResult(ReturnCode.FAIL);
+    }
+
+    @PostMapping("add2")
+    public Object invitedUser(@EncryptProcess ParamsVo params) throws Exception {
+        ParamsMap<String, Object> map = params.getParams();
+        String code = (String) map.remove("SMS_CODE");
+        String phone = (String) map.get(Table.User.PHONE.name());
+        if (StringUtils.isEmpty(code) || !code.equals(Constants.getCache(CacheKey.U_SMS_Prefix + phone)))
+            return new BaseResult(103, "短信验证码错误");
+        List<Map<String, Object>> users = baseDao.queryByProsInTab(tableName, ParamsMap.newMap(Table.User.PHONE.name(), phone));
+        if (!CollectionUtils.isEmpty(users)) return new BaseResult(333, "该手机号已注册");
+        String userName = phone + Table.SEPARATE_CACHE + ImageCode.getPartSymbol(6);
+        map.put(Table.User.USER_NAME.name(), userName);        //默认用户名
+        map.put(Table.User.NICKNAME.name(), userName);        //默认昵称
+        if (StringUtils.isEmpty(map.get(Table.User.BIZER_ID.name())))
+            map.put(Table.User.BIZER_ID.name(), 1088);      //运营人员
+        boolean flag = !StringUtils.isEmpty(map.get(Table.User.INVITER_ID.name()));
+        String passwd = ImageCode.getPartSymbol(8);
+        map.put(Table.User.PWD.name(), Base64.encode(DigestUtils.md5Hex(passwd).getBytes()));
+        ParamsVo paramsVo = new ParamsVo();
+        paramsVo.getParams().addParams("phone", phone).addParams("type", 1001).addParams("code", passwd);
+        System.out.println("============================================================"+passwd);
+//        BaseResult bas = commonAction.sendSms(paramsVo);
+//        if (bas.getCode() != 0) return bas;
+        int result = userService.addUser(map.addParams(Table.User.TYPE.name(), "User"));
+        if (result > 0) {
+//            Constants.setCache(CacheKey.U_SN_Prefix + phone, (String) map.get(Table.User.CLIENT_SN.name()));
+            List<Map<String, Object>> userList = baseDao.queryByProsInTab(tableName, ParamsMap.newMap(Table.User.PHONE.name(), phone));
+            Object userId = userList.get(0).get("id");
+            baseDao.insertByProsInTab(Table.FQ + Table.COUPON, ParamsMap.newMap(Table.Coupon.STATUS.name(), "2").addParams(Table.Coupon.COUPON_ID.name(), "14").addParams(Table.Coupon.USER_ID.name(), userId));
+            baseDao.insertByProsInTab(Table.FQ + Table.COUPON_RECORD, ParamsMap.newMap(Table.CouponRecord.COUPON_ID.name(), "14").addParams(Table.CouponRecord.COUPON_TYPE.name(), "a")
+                    .addParams(Table.CouponRecord.USER_ID.name(), userId).addParams(Table.CouponRecord.STEP.name(), "2").addParams(Table.CouponRecord.REMARK.name(),"受邀注册领取红包"));
+            if (flag) {
+                baseDao.insertByProsInTab(Table.FQ + Table.COUPON, ParamsMap.newMap(Table.Coupon.STATUS.name(), "2").addParams(Table.Coupon.REMARK.name(), userId).addParams(Table.Coupon.COUPON_ID.name(), "13").addParams(Table.Coupon.USER_ID.name(), userList.get(0).get("inviterId")));
+                baseDao.insertByProsInTab(Table.FQ + Table.COUPON_RECORD, ParamsMap.newMap(Table.CouponRecord.COUPON_ID.name(), "13").addParams(Table.CouponRecord.COUPON_TYPE.name(), "a")
+                        .addParams(Table.CouponRecord.USER_ID.name(), userList.get(0).get("inviterId")).addParams(Table.CouponRecord.STEP.name(), "2").addParams(Table.CouponRecord.REMARK.name(),"推荐注册获得红包"));
+            }
+            map.put("id", userId);
+            return new BaseResult(ReturnCode.OK, map);
         } else return new BaseResult(ReturnCode.FAIL);
     }
 
     @PostMapping("forget")
-    public Object forgetPasswd(@RequestParam String phone,@RequestParam(required = false) String clientSn,@RequestParam String smsCode, @RequestParam String newPasswd) {
+    public Object forgetPasswd(@RequestParam String phone, @RequestParam(required = false) String clientSn, @RequestParam String smsCode, @RequestParam String newPasswd) {
         if (StringUtils.isEmpty(smsCode) || !smsCode.equals(Constants.getCache(CacheKey.U_SMS_Prefix + phone)))
             return new BaseResult(103, "短信验证码错误");
-        List<Map<String,Object>> userList=baseDao.queryByProsInTab(tableName, ParamsMap.newMap(Table.User.PHONE.name(), phone));
-        if(CollectionUtils.isEmpty(userList))
+        List<Map<String, Object>> userList = baseDao.queryByProsInTab(tableName, ParamsMap.newMap(Table.User.PHONE.name(), phone));
+        if (CollectionUtils.isEmpty(userList))
             return new BaseResult(201, "您输入的用户不存在");
 //        if(!userList.get(0).get("clientSn").equals(clientSn))     //TODO:去掉设备序列号限制
 //            return new BaseResult(ReturnCode.ONLY_LIMIT_CLIENT);
-        int count = baseDao.updateByProsInTab(tableName, ParamsMap.newMap(Table.User.PWD.name(),newPasswd).addParams(Table.User.PHONE.name(),phone));
+        int count = baseDao.updateByProsInTab(tableName, ParamsMap.newMap(Table.User.PWD.name(), newPasswd).addParams(Table.User.PHONE.name(), phone));
         return count > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
     }
 
     //addParams("PWD", Base64.encode(DigestUtils.md5Hex(tenantPhone.substring(5)).getBytes()))
 
     @PostMapping("login")
-    public Object login(@RequestHeader(Constants.APP_VER)String reqAppVer,@RequestHeader(required = false)String openId,@RequestBody ParamsVo paramsVo) {
+    public Object login(@RequestHeader(Constants.APP_VER) String reqAppVer, @RequestHeader(required = false) String openId, @RequestBody ParamsVo paramsVo) {
         String phone = (String) paramsVo.getParams().get("phone");
         String clientSn = (String) paramsVo.getParams().get("clientSn");
         String appMeta = (String) paramsVo.getParams().get("appMeta");
@@ -92,7 +136,7 @@ public class UserAction extends BaseAction {
         if (StringUtils.isEmpty(phone))
             return new BaseResult(ReturnCode.REQUEST_PARAMS_VERIFY_ERROR);
 //        List<Map<String, Object>> users = baseDao.queryByProsInTab(tableName, ParamsMap.newMap(Table.User.PHONE.name(), phone).addParams(Table.User.IS_ENABLE.name(), 1));      //TODO:AppStore上架
-        List<Map<String, Object>> users = userDao.queryLoginTab(phone,null);      //TODO:AppStore上架
+        List<Map<String, Object>> users = userDao.queryLoginTab(phone, null);      //TODO:AppStore上架
         if (CollectionUtils.isEmpty(users)) {
             return new BaseResult(ReturnCode.USER_NOT_EXISTS);
         }
@@ -104,15 +148,15 @@ public class UserAction extends BaseAction {
 //            Constants.setCacheValue("tmp", CacheKey.U_ + phone, SerializeUtil.serialize(user));     //缓存登录信息
             String token = ImageCode.getPartSymbol(32);
             Long id = (Long) user.get("id");
-            if(!StringUtils.isEmpty(appMeta))
-                Constants.hsetCache(CacheKey.APP_META,"U_"+id,appMeta);
-            if (StringUtils.isEmpty(user.get("openId"))&&!StringUtils.isEmpty(openId)) {            //公众号
-                baseDao.updateByProsInTab(Table.FQ + Table.USER, ParamsMap.newMap(Table.User.OPEN_ID.name(), openId).addParams(Table.UTIME,new Date()).addParams(Table.ID,id));
+            if (!StringUtils.isEmpty(appMeta))
+                Constants.hsetCache(CacheKey.APP_META, "U_" + id, appMeta);
+            if (StringUtils.isEmpty(user.get("openId")) && !StringUtils.isEmpty(openId)) {            //公众号
+                baseDao.updateByProsInTab(Table.FQ + Table.USER, ParamsMap.newMap(Table.User.OPEN_ID.name(), openId).addParams(Table.UTIME, new Date()).addParams(Table.ID, id));
             }
-            if(TokenInterceptor.WeChat.equals(reqAppVer.split(Table.SEPARATE_CACHE)[1])){
-                Constants.hsetCache(CacheKey.WX_HEAD, Constants.USER_ID+openId,String.valueOf(id));
-                Constants.hsetCache(CacheKey.WX_HEAD, Constants.USER_PHONE+openId,(String)user.get("phone"));
-            }else
+            if (TokenInterceptor.WeChat.equals(reqAppVer.split(Table.SEPARATE_CACHE)[1])) {
+                Constants.hsetCache(CacheKey.WX_HEAD, Constants.USER_ID + openId, String.valueOf(id));
+                Constants.hsetCache(CacheKey.WX_HEAD, Constants.USER_PHONE + openId, (String) user.get("phone"));
+            } else
                 Constants.setCacheOnExpire(CacheKey.U_TOKEN_Prefix + id, token, sessionExpire);
             return new BaseResult(0, ParamsMap.newMap("token", token).addParams("userInfo", user));
         } else return new BaseResult(ReturnCode.LOGIN_PWD_ERROR);

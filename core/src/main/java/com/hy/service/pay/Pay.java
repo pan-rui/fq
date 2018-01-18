@@ -67,5 +67,8 @@ public class Pay {
         return (IPaymentService)Constants.applicationContext.getBean(payType.getRemark());
     }*/
 
+    public static Map<String, String> getPayType() {
+        return payType;
+    }
 
 }

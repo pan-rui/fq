@@ -250,13 +250,15 @@ public class LogAspect extends BaseAction {
         Map<String, Object> map = new LinkedHashMap<>(page.getParams());
         map.forEach((k,v)->{
             int indexOf = k.indexOf(Table.FIELD_INTERVAL);
-            page.getParams().put(k.substring(0,indexOf).toLowerCase() + Table.SEPARATE + k.substring(indexOf+1), page.getParams().remove(k));
+            if(indexOf>0)
+                page.getParams().put(k.substring(0,indexOf).toLowerCase() + Table.SEPARATE + k.substring(indexOf+1), page.getParams().remove(k));
         });
         if(!CollectionUtils.isEmpty(page.getMatchs())) {
             map = new LinkedHashMap<>(page.getMatchs());
             map.forEach((k, v) -> {
                 int indexOf = k.indexOf(Table.FIELD_INTERVAL);
-                page.getMatchs().put(k.substring(0,indexOf).toLowerCase() + Table.SEPARATE + k.substring(indexOf+1), page.getMatchs().remove(k));
+                if(indexOf>0)
+                    page.getMatchs().put(k.substring(0,indexOf).toLowerCase() + Table.SEPARATE + k.substring(indexOf+1), page.getMatchs().remove(k));
             });
         }
         //orderMap  也可进行编码

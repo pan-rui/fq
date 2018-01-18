@@ -26,6 +26,7 @@ public interface IBase {
     public static final String DEF_CHATSET = "UTF-8";
     public static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssSSS");
     public static final SimpleDateFormat sdf2= new SimpleDateFormat("yyyyMMddHHmmss");
+    public static final SimpleDateFormat sdf3= new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     public static final SimpleDateFormat dateSdf= new SimpleDateFormat("yyyy-MM-dd");
     public static final SimpleDateFormat dateSdf2= new SimpleDateFormat("yyyy/MM/dd");
     public static final SimpleDateFormat dateSdf3= new SimpleDateFormat("yyyy-MM");

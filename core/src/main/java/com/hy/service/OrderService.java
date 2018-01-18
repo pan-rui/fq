@@ -14,7 +14,6 @@ import com.hy.dao.ProductDao;
 import com.hy.service.pay.Pay;
 import com.hy.task.OrderCancelJob;
 import com.hy.task.OrderCancelNotify;
-import com.hy.task.OrderPayJob;
 import com.hy.vo.ParamsVo;
 import org.apache.commons.lang.NumberUtils;
 import org.apache.logging.log4j.LogManager;
@@ -52,6 +51,8 @@ public class OrderService {
     private BaseDao baseDao;
     @Autowired
     private ProductDao productDao;
+    @Autowired
+    private CommonService commonService;
     @Value("#{config['ORDER_TASK_POOL']}")
     private int orderTaskPool;
     private String tableName = Table.FQ + Table.ORDER;
@@ -72,9 +73,11 @@ public class OrderService {
     public BaseResult pay(String payType, Map<String, Object> params) {
         //验证
         //支付接口
+        BaseResult baseResult = null;
         String custom = "firstPay" + Table.SEPARATE_SPLIT + params.get("userId") + Table.SEPARATE_SPLIT + params.get("id");
+        Object amount=params.get("payMoney");
         params.put("subject", params.get("productName"));
-        params.put("amount", params.get("payMoney"));
+        params.put("amount",amount );
         params.put("payType", payType);
         if ("2".equals(payType)) {
             String accNo = (String) params.get("bankCardNo");
@@ -89,7 +92,14 @@ public class OrderService {
             params.put("customKey","reqReserved");
             params.put("customVal", custom);
         }
-        BaseResult baseResult = Pay.recharge(params);
+        if(Double.parseDouble(String.valueOf(amount))>0.01) {
+             baseResult= Pay.recharge(params);
+        }else{
+            Date date=new Date();
+            String no=IBase.sdf.format(date);
+            params.put("autoPay", custom);
+            baseResult = commonService.paySuccessCallBack(params, no, no,IBase.sdf3.format(date), "autoPay", "0", payType) ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
+        }
         return baseResult;
     }
 
@@ -206,7 +216,7 @@ public class OrderService {
                 for (Iterator<Map<String, Object>> it = couponList.iterator(); it.hasNext(); ) {
                     Map<String, Object> couMap = it.next();
                     String couponType = (String) couMap.get("COUPON_TYPE");
-                    if ("c".equals(couponType)) continue;        //现金券,放在后面计算
+                    if ("c".equals(couponType)||"a".equals(couponType)) continue;        //现金券,放在后面计算
 
                     Map<String, Object> conditionMap = JSON.parseObject((String) couMap.get("COND"), Map.class);
                     Map<String, Object> limitMap = (Map<String, Object>) conditionMap.get("limit");

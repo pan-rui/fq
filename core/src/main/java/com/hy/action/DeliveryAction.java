@@ -52,6 +52,11 @@ public class DeliveryAction extends BaseAction {
         return count > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
     }
 
+    @PostMapping("/del")
+    public BaseResult delDelivery(@RequestHeader(Constants.USER_ID) String userId, @EncryptProcess ParamsVo paramsVo) {
+        int count = baseDao.updateByProsInTab(tableName, paramsVo.getParams().addParams(Table.Delivery.IS_ENABLE.name(), 0).addParams(Table.ID, paramsVo.getParams().remove(Table.ID)));
+        return count > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
+    }
     @PostMapping("list")
     public BaseResult getDeliveryList(@RequestHeader(Constants.USER_ID) String userId, @EncryptProcess ParamsVo paramsVo) {
         return new BaseResult(ReturnCode.OK, baseDao.queryListInTab(tableName, paramsVo.getParams().addParams(Table.Delivery.IS_ENABLE.name(), 1)

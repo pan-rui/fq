@@ -9,27 +9,21 @@ import cn.jpush.api.push.model.Platform;
 import cn.jpush.api.push.model.PushPayload;
 import cn.jpush.api.push.model.audience.Audience;
 import cn.jpush.api.push.model.audience.AudienceTarget;
-import cn.jpush.api.push.model.audience.AudienceType;
 import cn.jpush.api.push.model.notification.AndroidNotification;
 import cn.jpush.api.push.model.notification.IosNotification;
 import cn.jpush.api.push.model.notification.Notification;
-import com.alibaba.fastjson.JSON;
 import com.google.gson.JsonObject;
-import com.hy.base.BaseImpl;
 import com.hy.core.Constants;
 import com.hy.core.ParamsMap;
+import com.hy.core.Table;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -147,7 +141,7 @@ public class JPushUtil {
 	public static void main(String[] args) {
 		JsonObject jsonObject=new JsonObject();
 		jsonObject.addProperty("aa", "gfweter");
-		JPushUtil.pushByRegId(JPushUtil.USER_APP,"b","测试标题","测试内容",jsonObject,"161a3797c80058df7f1");
+		JPushUtil.pushByRegId(JPushUtil.USER_APP+"1165","NOTIFY","测试标题","测试内容",jsonObject,"190e35f7e04166a2161");
 	}
 
 	public static void submitTask(Runnable runnable) {

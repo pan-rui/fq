@@ -13,6 +13,7 @@ import com.hy.dao.CommonDao;
 import com.hy.service.CommonService;
 import com.hy.service.UserService;
 import com.hy.util.ImageCode;
+import com.hy.util.JPushUtil;
 import com.hy.util.JTUtil;
 import com.hy.vo.ParamsVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,7 +81,7 @@ public class UserAction extends BaseAction {
             String token = ImageCode.getPartSymbol(32);
             Long id= (Long) user.get("id");
             Constants.setCacheOnExpire(CacheKey.U_TOKEN_Prefix + id, token, sessionExpire);
-            Constants.hsetCache(CacheKey.APP_META,"S_"+phone,appMeta);
+            Constants.hsetCache(CacheKey.APP_META, JPushUtil.SALE_APP+id,appMeta);
             return new BaseResult(0, ParamsMap.newMap("token", token).addParams("userInfo", user));
         } else return new BaseResult(ReturnCode.LOGIN_PWD_ERROR);
     }

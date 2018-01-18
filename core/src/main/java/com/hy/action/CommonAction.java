@@ -53,6 +53,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -97,11 +98,11 @@ public class CommonAction extends BaseAction {
         }
         JSONArray jsonArray = new JSONArray();
         String fileType = request.getParameter("fileType");
-        boolean flag=StringUtils.isEmpty(fileType);
+        boolean flag = StringUtils.isEmpty(fileType);
         List<Map<String, Object>> attachs = new ArrayList<>();
         for (int i = 0; i < fileMap.size(); i++) {
             MultipartFile file = fileMap.get("file" + i).get(0);
-            if(flag)
+            if (flag)
                 fileType = request.getParameter("fileType" + i);
             String relativelyPath = ImgUtil.pathMap.get(fileType);
             new File(ImgUtil.BASE_PATH + relativelyPath).mkdirs();
@@ -113,21 +114,24 @@ public class CommonAction extends BaseAction {
             attachs.add(ParamsMap.newMap(Table.UserAttach.ATTACH_TYPE.name(), fileType).addParams(Table.UserAttach.URL.name(), path).addParams(Table.UserAttach.ATTACH_LEN.name(), newFile.length())
                     .addParams(Table.UserAttach.UP_ID.name(), userId).addParams(Table.UserAttach.USER_ID.name(), userId).addParams(Table.UserAttach.IS_ENABLE.name(), 1));
         }
-        if(flag)
+        if (flag)
             baseDao.insertUpdateBatchByProsInTab(Table.FQ + Table.USER_ATTACH, attachs);
         return new BaseResult(ReturnCode.OK, jsonArray);
     }
 
     @PostMapping("sms")
-    public Object sendSms(@RequestBody ParamsVo params) throws Exception {
+    public BaseResult sendSms(@RequestBody ParamsVo params) throws Exception {
         String phone = (String) params.getParams().get("phone");
-        String code = ImageCode.getPartDigit(6);
-        if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(code))
+        if (StringUtils.isEmpty(phone))
             return new BaseResult(ReturnCode.FAIL);
+        String code = (String) params.getParams().get("code");
+        if (StringUtils.isEmpty(code))
+            code = ImageCode.getPartDigit(6);
         Map<String, Object> smsTemplate = baseDao.queryByIdInTab(Table.FQ + Table.SMS_TEMPLATE, params.getParams().get("type"));
         String varJson = (String) smsTemplate.get("variables");
-        if (!StringUtils.isEmpty(varJson))
-            smsTemplate.put("variables", varJson.replace("random", code));
+        if (!StringUtils.isEmpty(varJson)) {
+            smsTemplate.put("variables", varJson.replace("random", code).replace("randomP", phone.substring(0, 3) + "****" + phone.substring(7)));
+        }
         SendSmsResponse sendSmsResponse = AliUtil.sendSms(smsTemplate, phone, null);
         Constants.setCacheOnExpire(CacheKey.U_SMS_Prefix + phone, code, 300);
         return "OK".equals(sendSmsResponse.getCode()) ? new BaseResult(ReturnCode.OK) : (sendSmsResponse.getCode().equals("isv.BUSINESS_LIMIT_CONTROL") ? new BaseResult(1235, "短信发送频繁,请稍后再试") : new BaseResult(10000001, sendSmsResponse.getMessage()));
@@ -180,7 +184,7 @@ public class CommonAction extends BaseAction {
         String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.SALE_APP + certUserId);
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("userId", userId);
-        JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.SALE_APP+certUserId, "AUDIT","有一项用户分期资质审核任务待完成", "用户号码:" + phone, jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));      //TODO:AppMeta
+        JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.SALE_APP + certUserId, "AUDIT", "有一项用户分期资质审核任务待完成", "用户号码:" + phone, jsonObject, appMeta.split(Table.SEPARATE_SPLIT)[0]));      //TODO:AppMeta
 //        }
 /*            status = "4";
         } else status = "3";*/
@@ -277,7 +281,7 @@ public class CommonAction extends BaseAction {
         if (!StringUtils.isEmpty(newPasswd) && userMap.get("pwd").equals(oldPasswd)) {
             int count = baseDao.updateByProsInTab(tableName, ParamsMap.newMap(Table.User.PWD.name(), newPasswd).addParams(Table.ID, uId));
             return count > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
-        } else return new BaseResult(ReturnCode.FAIL);
+        } else return new BaseResult(ReturnCode.OLD_PWD_ERROR);
     }
 
     @GetMapping("bill/{userId:[0-9]+}")
@@ -322,6 +326,12 @@ public class CommonAction extends BaseAction {
         }
         commonDao.queryHelpPageMul(page);
         return new BaseResult(ReturnCode.OK, page);
+    }
+
+    @PutMapping("help/read/{id:\\d+}")
+    public BaseResult helpRead(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId, @PathVariable Long id) {
+        baseDao.ddlBySql("update fq.HELP set CLICK=CLICK+1 where ID=" + id);
+        return new BaseResult(ReturnCode.OK);
     }
 
     @PostMapping("feedback")
@@ -397,7 +407,8 @@ public class CommonAction extends BaseAction {
 
     @PostMapping("coupons")
     public BaseResult getCoupons(@RequestHeader(Constants.USER_ID) String uId, @RequestHeader(Constants.APP_VER) String appVer, @EncryptProcess Page page) {
-        return new BaseResult(ReturnCode.OK, commonDao.queryCouponPageMul(page));
+        commonDao.queryCouponPageMul(page);
+        return new BaseResult(ReturnCode.OK, page);
     }
 
     @GetMapping("coupons")
@@ -444,9 +455,9 @@ public class CommonAction extends BaseAction {
     }
 
     @GetMapping("properties")
-    public BaseResult getConfigProperties(@RequestHeader(Constants.APP_VER) String appVer, @RequestParam(required = true) String pors) {
+    public BaseResult getConfigProperties(@RequestHeader(Constants.APP_VER) String appVer, @RequestParam(required = true) String pros) {
         Map<String, Object> prosMap = new HashMap<>();
-        for (String pro : pors.split(Table.SEPARATE_SPLIT)) {
+        for (String pro : pros.split(Table.SEPARATE_SPLIT)) {
             prosMap.put(pro, Constants.getSystemStringValue(ColumnProcess.decryptVal(pro)));
         }
         return new BaseResult(ReturnCode.OK, prosMap);
@@ -459,28 +470,129 @@ public class CommonAction extends BaseAction {
     }
 
     @PostMapping("productDiscuss/{id:[0-9]+}/{operate:[01234]}")
-    public BaseResult OperateProductDiscuss(@RequestHeader(Constants.APP_VER) String appVer,@RequestHeader(Constants.USER_ID) Long uId,@PathVariable Long id,@PathVariable int operate,@RequestParam(defaultValue = "1000000")Integer index) {
-        int count = commonDao.operateProductDiscuss(operate, uId, id,index);
+    public BaseResult OperateProductDiscuss(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Long uId, @PathVariable Long id, @PathVariable int operate, @RequestParam(defaultValue = "1000000") Integer index) {
+        int count = commonDao.operateProductDiscuss(operate, uId, id, index);
         String fieldKey = operate == 0 ? Table.ProductDiscuss.OPPOSE_SIZE.name() : (operate == 1 ? Table.ProductDiscuss.APPROVED_SIZE.name() : null);
-        Object data=null;
-        if(!StringUtils.isEmpty(fieldKey))
+        Object data = null;
+        if (!StringUtils.isEmpty(fieldKey))
             data = baseDao.queryBySOne("select " + fieldKey + " size from fq.PRODUCT_DISCUSS where ID=" + id);
 //            data=baseDao.queryJsonSize(Table.FQ+Table.PRODUCT_DISCUSS,fieldKey,"$", ParamsMap.newMap(Table.ID,id));
-        return new BaseResult(ReturnCode.OK,data);
+        return new BaseResult(ReturnCode.OK, data);
     }
 
     @PostMapping("addProductDiscuss")
-    public BaseResult productDiscuss(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Long uId,@EncryptProcess ParamsVo paramsVo) {
-        int size = baseDao.insertByProsInTab(Table.FQ + Table.PRODUCT_DISCUSS, paramsVo.getParams().addParams(Table.ProductDiscuss.APPOVED.name(),"[]")
-                .addParams(Table.ProductDiscuss.OPPOSE.name(),"[]").addParams(Table.UP_ID, uId).addParams(Table.UTIME, new Date()));
-        Object orderId=paramsVo.getParams().get(Table.ProductDiscuss.ORDER_ID.name());
-        Object productId=paramsVo.getParams().get(Table.ProductDiscuss.PRODUCT_ID.name());
+    public BaseResult productDiscuss(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Long uId, @EncryptProcess ParamsVo paramsVo) {
+        int size = baseDao.insertByProsInTab(Table.FQ + Table.PRODUCT_DISCUSS, paramsVo.getParams().addParams(Table.ProductDiscuss.APPOVED.name(), "[]")
+                .addParams(Table.ProductDiscuss.OPPOSE.name(), "[]").addParams(Table.UP_ID, uId).addParams(Table.UTIME, new Date()));
+        Object orderId = paramsVo.getParams().get(Table.ProductDiscuss.ORDER_ID.name());
+        Object productId = paramsVo.getParams().get(Table.ProductDiscuss.PRODUCT_ID.name());
         if (size > 0) {
             Map<String, Object> jsonPath = baseDao.queryBySOne("SELECT JSON_UNQUOTE(REPLACE(JSON_SEARCH(o.ITEMS,'one'," + productId + ",NULL,'$[*].id'),'id','isDiscuss')) path FROM fq.ORDER o WHERE ID=" + orderId);
-            if(!CollectionUtils.isEmpty(jsonPath))
-                size=baseDao.ddlBySql("UPDATE fq.ORDER o set o.ITEMS=JSON_INSERT(o.ITEMS,'"+jsonPath.get("path")+"',1) WHERE o.ID="+orderId);
+            if (!CollectionUtils.isEmpty(jsonPath))
+                size = baseDao.ddlBySql("UPDATE fq.ORDER o set o.ITEMS=JSON_INSERT(o.ITEMS,'" + jsonPath.get("path") + "',1) WHERE o.ID=" + orderId);
         }
         return size > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
+    }
+
+    @PostMapping("msg")
+    public BaseResult getUserMsg(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId, @EncryptProcess Page page) {
+        List<Map<String, Object>> userMsgList = baseDao.queryPageInTab(Table.FQ + Table.USER_MESSAGE, page);
+        Map<String, Object> result = new HashMap<>();
+        List<Map> resultList = new ArrayList<>();
+        userMsgList.forEach((map) -> {
+            String msgType = (String) map.get("type");
+            List<Map> obj = (List<Map>) result.get(msgType);
+            if (obj == null) {
+                obj = new ArrayList<>();
+                result.put(msgType, obj);
+            }
+            obj.add(map);
+        });
+//        resultList.add(result);
+        List<Map<String, Object>> msgList2 = baseDao.queryListInTab(Table.FQ + Table.USER_MESSAGE, ParamsMap.newMap(Table.USER_ID, uId).addParams(Table.UserMessage.IS_READED.name(), "0"), null);
+        Map<String, Integer> countMap = new HashMap<>();
+        msgList2.forEach((map -> {
+            String msgType = (String) map.get("type");
+            Integer obj = countMap.get(msgType);
+            if (obj == null) {
+                obj = 0;
+            }
+            countMap.put(msgType, ++obj);
+        }));
+        resultList.add(ParamsMap.newMap("datas", result).addParams("counts", countMap));
+        page.setResults(resultList);
+        return new BaseResult(0, page);
+    }
+
+    @PostMapping("incerScore")
+    public BaseResult incerScore(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId, @EncryptProcess ParamsVo paramsVo) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, 1);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        List<String> everyDayList = Arrays.asList(Constants.getSystemStringValue("EVERY_DAY").split(Table.SEPARATE_SPLIT));
+        paramsVo.getParams().forEach((k, v) -> {
+            if (everyDayList.contains(k)) {
+                String val = Constants.hgetCache(k, uId.toString());
+                if (StringUtils.isEmpty(val)) {
+                    Constants.hsetCache(k, uId.toString(), "1");
+                    baseDao.ddlBySql("update fq.ACCOUNT set SCORE_BALANCE=SCORE_BALANCE+" + v + " where USER_ID=" + uId);
+                    baseDao.insertByProsInTab(Table.FQ + Table.TRADE_RECORD, ParamsMap.newMap(Table.USER_ID, uId).addParams(Table.TradeRecord.TRADE_TYPE, "earnD").addParams(Table.TradeRecord.TRADE_AMOUNT.name(), val)
+                            .addParams(Table.TradeRecord.ACCT_TIME.name(), new Date()).addParams(Table.TradeRecord.SOURCE.name(), k).addParams(Table.UP_ID, uId));
+                }
+            }
+        });
+        return new BaseResult(ReturnCode.OK);
+    }
+
+    @GetMapping("account")
+    public BaseResult getAccount(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId) {
+        List<Map<String, Object>> bList = baseDao.queryByProsInTab(Table.FQ + Table.ACCOUNT, ParamsMap.newMap(Table.USER_ID, uId));
+        Map<String, Object> result = new HashMap<>();
+        if (!CollectionUtils.isEmpty(bList)) result.put("balance", bList.get(0));
+        Map<String, Object> exp = commonDao.queryUserExpByMonth(uId);
+        Map<String, Object> earn = commonDao.queryUserEarnByMonth(uId);
+        Map<String, Object> earnScore = commonDao.queryUserScoreEarnByMonth(uId);
+        Map<String, Object> expScore = commonDao.queryUserScoreConv(uId);
+        if (!CollectionUtils.isEmpty(exp))
+            result.put("exp", exp.get("totalAmount"));
+        if (!CollectionUtils.isEmpty(earn))
+            result.put("earn", earn.get("totalAmount"));
+        if (!CollectionUtils.isEmpty(earnScore))
+            result.put("earnScore", earnScore.get("totalAmount"));
+        if (!CollectionUtils.isEmpty(expScore))
+            result.put("expScore", expScore.get("totalAmount"));
+        return new BaseResult(ReturnCode.OK, result);
+    }
+
+    @GetMapping("balanceAll")
+    public BaseResult balanceAll(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId) {
+        return new BaseResult(ReturnCode.OK, commonDao.queryBalanceAllTab(uId));
+    }
+
+    @GetMapping("balanceExp")
+    public BaseResult balanceExp(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId) {
+        return new BaseResult(ReturnCode.OK, commonDao.queryBalanceExpTab(uId));
+    }
+
+    @GetMapping("balanceEarn")
+    public BaseResult balanceEarn(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId) {
+        return new BaseResult(ReturnCode.OK, commonDao.queryBalanceEarnTab(uId));
+    }
+
+    @PostMapping("inviterInfo")
+    public BaseResult inviterInfo(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId, @EncryptProcess Page page) {
+        List<Map<String,Object>> resultList=commonDao.queryInviterInfoPage(page);
+        return new BaseResult(ReturnCode.OK, page);
+    }
+
+    @PostMapping("redBagRecord")
+    public BaseResult redBagRecord(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Object uId,@EncryptProcess Page page) {
+       Map<String,Object> balanceMap=baseDao.queryBySOne("SELECT sum(cd.COUPON_AMOUNT) balance from fq.COUPON c JOIN fq.COUPON_DICT cd ON c.COUPON_ID=cd.ID WHERE c.USER_ID=" + page.getParams().get("CR_USER_ID") + " AND c.STATUS='2' and cd.COUPON_TYPE='"+page.getParams().get("CD_COUPON_TYPE")+"'");
+        List<Map<String, Object>> redBagList = commonDao.queryRedBagRecordPageMul(page);
+        page.getResults().add(balanceMap);
+        return new BaseResult(ReturnCode.OK, page);
     }
 
 }

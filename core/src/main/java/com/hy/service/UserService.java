@@ -52,7 +52,15 @@ public class UserService {
     public static int certStatusExpire=14400;      //2天
     private final Logger logger = LogManager.getLogger(UserService.class);
     public int addUser(Map<String, Object> uMap) {
-        return baseDao.insertByProsInTab(Table.FQ+ Table.USER, uMap);
+        int size=0;
+        size=baseDao.insertByProsInTab(Table.FQ+ Table.USER, uMap);
+        if(size>0) {
+            List<Map<String, Object>> userList = baseDao.queryByProsInTab(Table.FQ + Table.USER, ParamsMap.newMap(Table.User.PHONE.name(), uMap.get(Table.User.PHONE.name())));
+            Map<String,Object> userMap=userList.get(0);
+            size = baseDao.insertByProsInTab(Table.FQ + Table.ACCOUNT, ParamsMap.newMap(Table.USER_ID, userMap.get("id")).addParams(Table.Account.USER_NAME.name(), userMap.get("phone"))
+                    .addParams(Table.Account.USER_TYPE.name(), userMap.get("type")).addParams(Table.Account.STATUS.name(), "1"));
+        }
+        return size;
     }
 
 //    @Transactional

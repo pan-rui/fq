@@ -1,10 +1,12 @@
 package com.hy.action;
 
 import com.alibaba.fastjson.JSON;
+import com.google.gson.JsonObject;
 import com.hy.annotation.EncryptProcess;
 import com.hy.base.BaseResult;
 import com.hy.base.IBase;
 import com.hy.base.ReturnCode;
+import com.hy.core.CacheKey;
 import com.hy.core.ColumnProcess;
 import com.hy.core.Constants;
 import com.hy.core.Page;
@@ -13,6 +15,7 @@ import com.hy.core.Table;
 import com.hy.dao.BaseDao;
 import com.hy.service.CommonService;
 import com.hy.unionpay.sdk.AcpService;
+import com.hy.util.JPushUtil;
 import com.hy.vo.ParamsVo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,6 +97,11 @@ public class SingleAction extends BaseAction {
         int size = baseDao.deleteByProsInTab(Table.FQ + ColumnProcess.decryptVal(tableName), paramsVo.getParams());
         return size > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
     }
+    @PostMapping("{tableName:[A-Za-z]+}/del")
+    public BaseResult deleteCart(@RequestHeader(Constants.APP_VER) String appVer, @PathVariable String tableName, @EncryptProcess ParamsVo paramsVo) {
+        int size = baseDao.deleteByProsInTab(Table.FQ + ColumnProcess.decryptVal(tableName), paramsVo.getParams());
+        return size > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
+    }
 
     /**
      * 据ID查询
@@ -120,7 +128,7 @@ public class SingleAction extends BaseAction {
     @PutMapping("{tableName:[A-Za-z]+}/up")
     public BaseResult update(@RequestHeader(Constants.APP_VER) String appVer, @RequestHeader(Constants.USER_ID) Long uId, @PathVariable String tableName, @EncryptProcess ParamsVo paramsVo) {
         int size = baseDao.updateByProsInTab(Table.FQ + ColumnProcess.decryptVal(tableName), paramsVo.getParams().addParams(Table.UP_ID, uId).addParams(Table.UTIME, new Date()).addParams(Table.ID, paramsVo.getParams().remove(Table.ID)));
-        return size > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult();
+        return size > 0 ? new BaseResult(ReturnCode.OK) : new BaseResult(ReturnCode.FAIL);
     }
 
 /*    @PostMapping("collect")
@@ -148,10 +156,34 @@ public class SingleAction extends BaseAction {
             baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.STATE.name(), "1").addParams(Table.ID, orderId));
         } else {
             String state = "5";
-            String resultStr=JSON.toJSONString(pMap.get("lastResult"));
-            if(resultStr.contains("签收"))
+            Map<String,Object> lastResult= (Map<String, Object>) pMap.get("lastResult");
+            String shipState = (String) lastResult.get("state");            /*快递单当前签收状态，包括0在途中、1已揽收、2疑难、3已签收、4退签、5同城派送中、6退回等状态，详见章2.3.3 */
+            if("3".equals(shipState)) {
                 state = "7";
-            baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.SHIPMENTS_INFO.name(), resultStr).addParams(Table.Order.STATE.name(),state).addParams(Table.ID, orderId));
+                Map<String, Object> orderMap = baseDao.queryByIdInTab(Table.FQ + Table.ORDER, orderId);
+                Object userId=orderMap.get("userId");
+                String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.USER_APP +userId);
+                if(!StringUtils.isEmpty(appMeta)) {
+                    JsonObject jsonObject = new JsonObject();
+                    jsonObject.addProperty("logisticsCode", String.valueOf(orderMap.get("logisticsCode")));
+                    jsonObject.addProperty("orderId", orderId);
+                    jsonObject.addProperty("items", (String) orderMap.get("itmes"));
+                    JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.USER_APP + userId, "SHIP", "订单已签收", (String)orderMap.get("productName"), jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]));
+                }
+            } else if ("5".equals(shipState)) {
+                Map<String, Object> orderMap = baseDao.queryByIdInTab(Table.FQ + Table.ORDER, orderId);
+                Object userId=orderMap.get("userId");
+                String appMeta = Constants.hgetCache(CacheKey.APP_META, JPushUtil.USER_APP +userId);
+                if(!StringUtils.isEmpty(appMeta)) {
+                    JsonObject jsonObject = new JsonObject();
+                    jsonObject.addProperty("logisticsCode", String.valueOf(orderMap.get("logisticsCode")));
+                    jsonObject.addProperty("orderId", orderId);
+                    jsonObject.addProperty("orderNo", (String) orderMap.get("orderNo"));
+                    jsonObject.addProperty("itmes", (String) orderMap.get("items"));
+                    JPushUtil.submitTask(() -> JPushUtil.pushByRegId(JPushUtil.USER_APP + userId, "SHIP", "订单派送中...", (String)orderMap.get("productName"), jsonObject,appMeta.split(Table.SEPARATE_SPLIT)[0]));
+                }
+            }
+            baseDao.updateByProsInTab(Table.FQ + Table.ORDER, ParamsMap.newMap(Table.Order.SHIPMENTS_INFO.name(), JSON.toJSONString(lastResult)).addParams(Table.Order.STATE.name(),state).addParams(Table.ID, orderId));
         }
         return ParamsMap.newMap("result", true).addParams("returnCode", "200");
     }
