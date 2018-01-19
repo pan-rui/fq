@@ -14,6 +14,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="backstage" target="1.8" />
       <module name="core" target="1.8" />
       <module name="data" target="1.8" />
       <module name="fq" target="1.8" />
